@@ -400,3 +400,11 @@ body {
   }
 
 }
+
+@media (max-width: 768px) {
+
+  .main {
+    display: none !important;
+  }
+
+}
