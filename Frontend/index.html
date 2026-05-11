@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>PDF AI</title>
+
+<link rel="stylesheet" href="style.css"/>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+</head>
+
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" class="auth-screen">
+
+  <div class="auth-box">
+
+    <h1>PDF AI 🚀</h1>
+
+    <!-- LOGIN -->
+    <div id="loginBox">
+
+      <input id="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Senha" />
+
+      <div class="auth-actions">
+
+        <button onclick="login()" class="auth-btn primary">
+          Entrar
+        </button>
+
+        <button onclick="showSignup()" class="auth-btn secondary">
+          Criar conta
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signupBox" style="display:none;">
+
+      <input id="firstName" placeholder="Nome" />
+      <input id="lastName" placeholder="Sobrenome" />
+      <input id="signupEmail" placeholder="Email" />
+      <input id="signupPassword" type="password" placeholder="Senha" />
+      <input id="confirmPassword" type="password" placeholder="Confirmar senha" />
+
+      <div class="auth-actions">
+
+        <button onclick="signup()" class="auth-btn primary">
+          Criar conta
+        </button>
+
+        <button onclick="showLogin()" class="auth-btn secondary">
+          Voltar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <div class="sidebar-top">
+
+      <!-- USER BAR -->
+      <div class="user-bar">
+
+        <div>
+
+          <div class="logo">
+            PDF AI 🚀
+          </div>
+
+          <div id="welcomeText" class="welcome-text">
+            Olá 👋
+          </div>
+
+        </div>
+
+        <button class="logout-btn" onclick="logout()">
+          🚪
+        </button>
+
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="upload-area">
+
+        <input type="file" id="pdfFile" />
+
+        <button class="upload-btn" onclick="uploadPDF()">
+          Upload PDF
+        </button>
+
+        <button class="upload-btn" onclick="newChat()">
+          Novo Chat
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- HISTORY -->
+    <div class="history" id="history"></div>
+
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="topbar">
+
+      <div class="title">
+        Conversar com PDF
+      </div>
+
+      <div class="status" id="status">
+        Nenhum PDF aberto
+      </div>
+
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat" id="chat"></div>
+
+    <!-- INPUT -->
+    <div class="bottom">
+
+      <input id="question" placeholder="Pergunte qualquer coisa..." />
+
+      <button class="send-btn" onclick="askQuestion()">
+        Enviar
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
