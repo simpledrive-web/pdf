@@ -193,4 +193,32 @@ body {
   .send-btn {
     padding: 12px;
   }
+
+  .back-btn {
+  display: block;
+}
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  margin-right: 10px;
+  display: none;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.menu-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 18px;
+  cursor: pointer;
 }

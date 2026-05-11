@@ -3,7 +3,7 @@
 ========================= */
 const supabaseClient = window.supabase.createClient(
   "https://yaknoxndlcopqvigeuzf.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlha25veG5kbGNvcHF2aWdldXpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NTk1NjgsImV4cCI6MjA5MzEzNTU2OH0.u6rPw3_pusyoPjuhhBdYrrChhPKlV85j0tij_L9cuDI"
+  "SUA_CHAVE_SUPABASE"
 );
 
 /* =========================
@@ -11,6 +11,7 @@ const supabaseClient = window.supabase.createClient(
 ========================= */
 let pdfs = [];
 let chats = [];
+
 let currentPDF = null;
 let currentChat = null;
 let activeChatId = null;
@@ -24,13 +25,20 @@ const questionInput = document.getElementById("question");
 const statusEl = document.getElementById("status");
 const welcomeText = document.getElementById("welcomeText");
 
+const sidebarEl = document.querySelector(".sidebar");
+const mainEl = document.querySelector(".main");
+
+const backBtn = document.getElementById("backBtn");
+
 /* =========================
    FETCH SEGURO
 ========================= */
 async function safeFetch(url, options = {}) {
   try {
-    const { data: { session } } =
-      await supabaseClient.auth.getSession();
+
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession();
 
     const token = session?.access_token;
 
@@ -58,9 +66,10 @@ async function safeFetch(url, options = {}) {
 }
 
 /* =========================
-   MENSAGEM
+   MENSAGENS
 ========================= */
 function addMessage(content, role) {
+
   const div = document.createElement("div");
 
   div.className = "message " + role;
@@ -76,7 +85,10 @@ function addMessage(content, role) {
    PDFS
 ========================= */
 async function loadPDFs() {
-  const data = await safeFetch("https://pdf-8cd2.onrender.com/api/pdfs");
+
+  const data = await safeFetch(
+    "https://pdf-8cd2.onrender.com/api/pdfs"
+  );
 
   pdfs = Array.isArray(data) ? data : [];
 
@@ -84,14 +96,18 @@ async function loadPDFs() {
 }
 
 function renderHistory() {
+
   historyEl.innerHTML = "";
 
   pdfs.forEach(pdf => {
+
     const div = document.createElement("div");
 
     div.className = "history-item";
 
-    div.innerText = "📄 " + pdf.file_name;
+    div.innerHTML = `
+      <span>📄 ${pdf.file_name}</span>
+    `;
 
     div.onclick = () => openPDF(pdf);
 
@@ -103,6 +119,7 @@ function renderHistory() {
    OPEN PDF
 ========================= */
 async function openPDF(pdf) {
+
   currentPDF = pdf;
 
   statusEl.innerText = pdf.file_name;
@@ -115,8 +132,9 @@ async function openPDF(pdf) {
 
   renderChats(chats);
 
-  if (chats.length > 0) {
-    openChat(chats[0]);
+  if (window.innerWidth <= 768) {
+    sidebarEl.style.display = "flex";
+    mainEl.style.display = "none";
   }
 }
 
@@ -124,6 +142,7 @@ async function openPDF(pdf) {
    CHATS
 ========================= */
 async function loadChats(pdfId) {
+
   const data = await safeFetch(
     `https://pdf-8cd2.onrender.com/api/chats/${pdfId}`
   );
@@ -132,18 +151,48 @@ async function loadChats(pdfId) {
 }
 
 function renderChats(chatsList) {
+
   historyEl.innerHTML = "";
 
   chatsList.forEach(chat => {
+
     const div = document.createElement("div");
 
     div.className =
       "history-item" +
       (activeChatId === chat.id ? " active" : "");
 
-    div.innerText = "💬 " + (chat.title || "Chat");
+    div.innerHTML = `
+      <span>💬 ${chat.title || "Chat"}</span>
+      <button class="menu-btn">⋮</button>
+    `;
 
     div.onclick = () => openChat(chat);
+
+    const menuBtn = div.querySelector(".menu-btn");
+
+    menuBtn.onclick = async (e) => {
+
+      e.stopPropagation();
+
+      const confirmar =
+        confirm("Excluir conversa?");
+
+      if (!confirmar) return;
+
+      await safeFetch(
+        `https://pdf-8cd2.onrender.com/api/chats/${chat.id}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      chats = chats.filter(c => c.id !== chat.id);
+
+      renderChats(chats);
+
+      chatEl.innerHTML = "";
+    };
 
     historyEl.appendChild(div);
   });
@@ -153,7 +202,9 @@ function renderChats(chatsList) {
    OPEN CHAT
 ========================= */
 async function openChat(chat) {
+
   currentChat = chat;
+
   activeChatId = chat.id;
 
   chatEl.innerHTML = "";
@@ -165,31 +216,67 @@ async function openChat(chat) {
   if (!Array.isArray(messages)) return;
 
   messages.forEach(msg => {
+
     addMessage(
       msg.content,
-      msg.role === "user" ? "user" : "ai"
+      msg.role === "user"
+        ? "user"
+        : "ai"
     );
+
   });
 
   renderChats(chats);
+
+  /* MOBILE */
+  if (window.innerWidth <= 768) {
+
+    sidebarEl.style.display = "none";
+
+    mainEl.style.display = "flex";
+  }
 }
+
+/* =========================
+   VOLTAR
+========================= */
+backBtn.onclick = () => {
+
+  currentChat = null;
+
+  activeChatId = null;
+
+  chatEl.innerHTML = "";
+
+  renderChats(chats);
+
+  sidebarEl.style.display = "flex";
+
+  mainEl.style.display = "none";
+};
 
 /* =========================
    NOVO CHAT
 ========================= */
 function newChat() {
+
   currentChat = null;
+
   activeChatId = null;
 
   chatEl.innerHTML = "";
 
-  addMessage("Novo chat iniciado 🚀", "ai");
+  addMessage(
+    "Novo chat iniciado 🚀",
+    "ai"
+  );
 }
 
 /* =========================
    PERGUNTAR
 ========================= */
 async function askQuestion() {
+
   const q = questionInput.value;
 
   if (!q || !currentPDF) return;
@@ -198,7 +285,9 @@ async function askQuestion() {
 
   questionInput.value = "";
 
+  /* NOVO CHAT */
   if (!currentChat) {
+
     const newChat = await safeFetch(
       "https://pdf-8cd2.onrender.com/api/chats",
       {
@@ -214,25 +303,37 @@ async function askQuestion() {
     );
 
     currentChat = newChat;
+
     activeChatId = newChat?.id;
   }
 
-const loading = document.createElement("div");
-loading.className = "message ai loading";
+  /* LOADING */
+  const loading =
+    document.createElement("div");
 
-let dots = 0;
+  loading.className =
+    "message ai loading";
 
-loading.innerText = "IA pensando";
+  let dots = 0;
 
-const interval = setInterval(() => {
-  dots = (dots + 1) % 4;
-  loading.innerText = "IA pensando" + ".".repeat(dots);
-}, 400);
+  loading.innerText = "IA pensando";
 
-chatEl.appendChild(loading);
+  const interval = setInterval(() => {
 
-chatEl.scrollTop = chatEl.scrollHeight;
+    dots = (dots + 1) % 4;
 
+    loading.innerText =
+      "IA pensando" +
+      ".".repeat(dots);
+
+  }, 400);
+
+  chatEl.appendChild(loading);
+
+  chatEl.scrollTop =
+    chatEl.scrollHeight;
+
+  /* FETCH IA */
   const data = await safeFetch(
     "https://pdf-8cd2.onrender.com/api/chat",
     {
@@ -249,25 +350,33 @@ chatEl.scrollTop = chatEl.scrollHeight;
   );
 
   clearInterval(interval);
+
   loading.remove();
 
   if (!data) {
+
     addMessage("Erro IA", "ai");
+
     return;
   }
 
   addMessage(data.answer, "ai");
+
+  renderChats(chats);
 }
 
 /* =========================
    UPLOAD PDF
 ========================= */
 async function uploadPDF() {
+
   const file = pdfFile.files[0];
 
-  if (!file) return alert("Escolha um PDF");
+  if (!file)
+    return alert("Escolha um PDF");
 
   const fd = new FormData();
+
   fd.append("file", file);
 
   await safeFetch(
@@ -285,41 +394,77 @@ async function uploadPDF() {
    AUTH
 ========================= */
 async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
 
-  const { data } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  const email =
+    document.getElementById("email").value;
+
+  const password =
+    document.getElementById("password").value;
+
+  const { data } =
+    await supabaseClient.auth
+      .signInWithPassword({
+        email,
+        password
+      });
 
   if (data?.session) {
-    document.getElementById("authScreen").style.display = "none";
 
-    welcomeText.innerText = `Olá 👋`;
+    document.getElementById(
+      "authScreen"
+    ).style.display = "none";
+
+    welcomeText.innerText = "Olá 👋";
 
     loadPDFs();
+
+    if (window.innerWidth <= 768) {
+      mainEl.style.display = "none";
+    }
   }
 }
 
 async function logout() {
+
   await supabaseClient.auth.signOut();
+
   location.reload();
 }
 
 /* =========================
    ENTER
 ========================= */
-questionInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") askQuestion();
-});
+questionInput.addEventListener(
+  "keydown",
+  (e) => {
+
+    if (e.key === "Enter") {
+
+      askQuestion();
+
+    }
+
+  }
+);
 
 /* =========================
    INIT
 ========================= */
-supabaseClient.auth.getSession().then(({ data }) => {
-  if (data.session) {
-    document.getElementById("authScreen").style.display = "none";
-    loadPDFs();
-  }
-});
+supabaseClient.auth
+  .getSession()
+  .then(({ data }) => {
+
+    if (data.session) {
+
+      document.getElementById(
+        "authScreen"
+      ).style.display = "none";
+
+      loadPDFs();
+
+      if (window.innerWidth <= 768) {
+        mainEl.style.display = "none";
+      }
+    }
+
+  });
