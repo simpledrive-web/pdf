@@ -217,11 +217,21 @@ async function askQuestion() {
     activeChatId = newChat?.id;
   }
 
-  const loading = document.createElement("div");
-  loading.className = "message ai loading";
-  loading.innerText = "IA pensando...";
+const loading = document.createElement("div");
+loading.className = "message ai loading";
 
-  chatEl.appendChild(loading);
+let dots = 0;
+
+loading.innerText = "IA pensando";
+
+const interval = setInterval(() => {
+  dots = (dots + 1) % 4;
+  loading.innerText = "IA pensando" + ".".repeat(dots);
+}, 400);
+
+chatEl.appendChild(loading);
+
+chatEl.scrollTop = chatEl.scrollHeight;
 
   const data = await safeFetch(
     "https://pdf-8cd2.onrender.com/api/chat",
@@ -238,6 +248,7 @@ async function askQuestion() {
     }
   );
 
+  clearInterval(interval);
   loading.remove();
 
   if (!data) {
