@@ -34,6 +34,7 @@ const backBtn = document.getElementById("backBtn");
    FETCH SEGURO
 ========================= */
 async function safeFetch(url, options = {}) {
+
   try {
 
     const {
@@ -53,16 +54,49 @@ async function safeFetch(url, options = {}) {
     const text = await response.text();
 
     try {
+
       return JSON.parse(text);
+
     } catch {
+
       console.log("Resposta inválida:", text);
+
       return null;
     }
 
   } catch (err) {
+
     console.log("Erro fetch:", err);
+
     return null;
   }
+}
+
+/* =========================
+   MOBILE HELPERS
+========================= */
+function showSidebarMobile() {
+
+  if (window.innerWidth <= 768) {
+
+    sidebarEl.style.display = "flex";
+
+    mainEl.style.display = "none";
+
+  }
+
+}
+
+function showChatMobile() {
+
+  if (window.innerWidth <= 768) {
+
+    sidebarEl.style.display = "none";
+
+    mainEl.style.display = "flex";
+
+  }
+
 }
 
 /* =========================
@@ -90,7 +124,9 @@ async function loadPDFs() {
     "https://pdf-8cd2.onrender.com/api/pdfs"
   );
 
-  pdfs = Array.isArray(data) ? data : [];
+  pdfs = Array.isArray(data)
+    ? data
+    : [];
 
   renderHistory();
 }
@@ -112,7 +148,9 @@ function renderHistory() {
     div.onclick = () => openPDF(pdf);
 
     historyEl.appendChild(div);
+
   });
+
 }
 
 /* =========================
@@ -132,10 +170,7 @@ async function openPDF(pdf) {
 
   renderChats(chats);
 
-  if (window.innerWidth <= 768) {
-    sidebarEl.style.display = "flex";
-    mainEl.style.display = "none";
-  }
+  showSidebarMobile();
 }
 
 /* =========================
@@ -147,7 +182,9 @@ async function loadChats(pdfId) {
     `https://pdf-8cd2.onrender.com/api/chats/${pdfId}`
   );
 
-  return Array.isArray(data) ? data : [];
+  return Array.isArray(data)
+    ? data
+    : [];
 }
 
 function renderChats(chatsList) {
@@ -160,7 +197,9 @@ function renderChats(chatsList) {
 
     div.className =
       "history-item" +
-      (activeChatId === chat.id ? " active" : "");
+      (activeChatId === chat.id
+        ? " active"
+        : "");
 
     div.innerHTML = `
       <span>💬 ${chat.title || "Chat"}</span>
@@ -169,7 +208,8 @@ function renderChats(chatsList) {
 
     div.onclick = () => openChat(chat);
 
-    const menuBtn = div.querySelector(".menu-btn");
+    const menuBtn =
+      div.querySelector(".menu-btn");
 
     menuBtn.onclick = async (e) => {
 
@@ -187,15 +227,22 @@ function renderChats(chatsList) {
         }
       );
 
-      chats = chats.filter(c => c.id !== chat.id);
+      chats =
+        chats.filter(c => c.id !== chat.id);
 
       renderChats(chats);
 
       chatEl.innerHTML = "";
+
+      currentChat = null;
+
+      activeChatId = null;
     };
 
     historyEl.appendChild(div);
+
   });
+
 }
 
 /* =========================
@@ -213,7 +260,8 @@ async function openChat(chat) {
     `https://pdf-8cd2.onrender.com/api/messages/${chat.id}`
   );
 
-  if (!Array.isArray(messages)) return;
+  if (!Array.isArray(messages))
+    return;
 
   messages.forEach(msg => {
 
@@ -228,13 +276,7 @@ async function openChat(chat) {
 
   renderChats(chats);
 
-  /* MOBILE */
-  if (window.innerWidth <= 768) {
-
-    sidebarEl.style.display = "none";
-
-    mainEl.style.display = "flex";
-  }
+  showChatMobile();
 }
 
 /* =========================
@@ -250,9 +292,7 @@ backBtn.onclick = () => {
 
   renderChats(chats);
 
-  sidebarEl.style.display = "flex";
-
-  mainEl.style.display = "none";
+  showSidebarMobile();
 };
 
 /* =========================
@@ -270,6 +310,8 @@ function newChat() {
     "Novo chat iniciado 🚀",
     "ai"
   );
+
+  showChatMobile();
 }
 
 /* =========================
@@ -279,7 +321,8 @@ async function askQuestion() {
 
   const q = questionInput.value;
 
-  if (!q || !currentPDF) return;
+  if (!q || !currentPDF)
+    return;
 
   addMessage(q, "user");
 
@@ -288,19 +331,21 @@ async function askQuestion() {
   /* NOVO CHAT */
   if (!currentChat) {
 
-    const newChat = await safeFetch(
-      "https://pdf-8cd2.onrender.com/api/chats",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          pdfId: currentPDF.id,
-          title: q.slice(0, 30)
-        })
-      }
-    );
+    const newChat =
+      await safeFetch(
+        "https://pdf-8cd2.onrender.com/api/chats",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            pdfId: currentPDF.id,
+            title: q.slice(0, 30)
+          })
+        }
+      );
 
     currentChat = newChat;
 
@@ -316,30 +361,33 @@ async function askQuestion() {
 
   let dots = 0;
 
-  loading.innerText = "IA pensando";
+  loading.innerText =
+    "IA pensando";
 
-  const interval = setInterval(() => {
+  const interval =
+    setInterval(() => {
 
-    dots = (dots + 1) % 4;
+      dots = (dots + 1) % 4;
 
-    loading.innerText =
-      "IA pensando" +
-      ".".repeat(dots);
+      loading.innerText =
+        "IA pensando" +
+        ".".repeat(dots);
 
-  }, 400);
+    }, 400);
 
   chatEl.appendChild(loading);
 
   chatEl.scrollTop =
     chatEl.scrollHeight;
 
-  /* FETCH IA */
+  /* IA */
   const data = await safeFetch(
     "https://pdf-8cd2.onrender.com/api/chat",
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type":
+          "application/json"
       },
       body: JSON.stringify({
         question: q,
@@ -363,6 +411,8 @@ async function askQuestion() {
   addMessage(data.answer, "ai");
 
   renderChats(chats);
+
+  showChatMobile();
 }
 
 /* =========================
@@ -414,13 +464,12 @@ async function login() {
       "authScreen"
     ).style.display = "none";
 
-    welcomeText.innerText = "Olá 👋";
+    welcomeText.innerText =
+      "Olá 👋";
 
     loadPDFs();
 
-    if (window.innerWidth <= 768) {
-      mainEl.style.display = "none";
-    }
+    showSidebarMobile();
   }
 }
 
@@ -462,9 +511,7 @@ supabaseClient.auth
 
       loadPDFs();
 
-      if (window.innerWidth <= 768) {
-        mainEl.style.display = "none";
-      }
+      showSidebarMobile();
     }
 
   });
