@@ -576,3 +576,24 @@ window.addEventListener("resize", () => {
   }
 
 });
+
+/* =========================
+   SIGNUP UI
+========================= */
+function showSignup() {
+
+  document.getElementById("loginBox")
+    .style.display = "none";
+
+  document.getElementById("signupBox")
+    .style.display = "block";
+}
+
+function showLogin() {
+
+  document.getElementById("signupBox")
+    .style.display = "none";
+
+  document.getElementById("loginBox")
+    .style.display = "block";
+}
