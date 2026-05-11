@@ -31,6 +31,41 @@ const mainEl = document.querySelector(".main");
 const backBtn = document.getElementById("backBtn");
 
 /* =========================
+   MOBILE HELPERS
+========================= */
+function showSidebarMobile() {
+
+  if (window.innerWidth <= 768) {
+
+    sidebarEl.style.display = "flex";
+    mainEl.style.display = "none";
+
+  } else {
+
+    sidebarEl.style.display = "flex";
+    mainEl.style.display = "flex";
+
+  }
+
+}
+
+function showChatMobile() {
+
+  if (window.innerWidth <= 768) {
+
+    sidebarEl.style.display = "none";
+    mainEl.style.display = "flex";
+
+  } else {
+
+    sidebarEl.style.display = "flex";
+    mainEl.style.display = "flex";
+
+  }
+
+}
+
+/* =========================
    FETCH SEGURO
 ========================= */
 async function safeFetch(url, options = {}) {
@@ -70,33 +105,6 @@ async function safeFetch(url, options = {}) {
 
     return null;
   }
-}
-
-/* =========================
-   MOBILE HELPERS
-========================= */
-function showSidebarMobile() {
-
-  if (window.innerWidth <= 768) {
-
-    sidebarEl.style.display = "flex";
-
-    mainEl.style.display = "none";
-
-  }
-
-}
-
-function showChatMobile() {
-
-  if (window.innerWidth <= 768) {
-
-    sidebarEl.style.display = "none";
-
-    mainEl.style.display = "flex";
-
-  }
-
 }
 
 /* =========================
@@ -280,7 +288,7 @@ async function openChat(chat) {
 }
 
 /* =========================
-   VOLTAR
+   BOTÃO VOLTAR
 ========================= */
 backBtn.onclick = () => {
 
@@ -441,7 +449,7 @@ async function uploadPDF() {
 }
 
 /* =========================
-   AUTH
+   LOGIN
 ========================= */
 async function login() {
 
@@ -469,10 +477,24 @@ async function login() {
 
     loadPDFs();
 
-    showSidebarMobile();
+    if (window.innerWidth <= 768) {
+
+      sidebarEl.style.display = "flex";
+      mainEl.style.display = "none";
+
+    } else {
+
+      sidebarEl.style.display = "flex";
+      mainEl.style.display = "flex";
+
+    }
+
   }
 }
 
+/* =========================
+   LOGOUT
+========================= */
 async function logout() {
 
   await supabaseClient.auth.signOut();
@@ -511,7 +533,46 @@ supabaseClient.auth
 
       loadPDFs();
 
-      showSidebarMobile();
+      if (window.innerWidth <= 768) {
+
+        sidebarEl.style.display = "flex";
+        mainEl.style.display = "none";
+
+      } else {
+
+        sidebarEl.style.display = "flex";
+        mainEl.style.display = "flex";
+
+      }
+
     }
 
   });
+
+/* =========================
+   RESPONSIVO AO REDIMENSIONAR
+========================= */
+window.addEventListener("resize", () => {
+
+  if (window.innerWidth > 768) {
+
+    sidebarEl.style.display = "flex";
+    mainEl.style.display = "flex";
+
+  } else {
+
+    if (currentChat) {
+
+      sidebarEl.style.display = "none";
+      mainEl.style.display = "flex";
+
+    } else {
+
+      sidebarEl.style.display = "flex";
+      mainEl.style.display = "none";
+
+    }
+
+  }
+
+});
