@@ -23,6 +23,43 @@ const historyEl = document.getElementById("history");
 const questionInput = document.getElementById("question");
 const statusEl = document.getElementById("status");
 const welcomeText = document.getElementById("welcomeText");
+const pdfFile = document.getElementById("pdfFile");
+
+/* =========================
+   UX HELPERS (NOVO)
+========================= */
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+function closeSidebar() {
+  document.getElementById("sidebar")?.classList.remove("open");
+}
+
+function openSidebar() {
+  document.getElementById("sidebar")?.classList.add("open");
+}
+
+/* =========================
+   LOADING IA BONITO (NOVO)
+========================= */
+function createLoading() {
+  const div = document.createElement("div");
+  div.className = "message ai loading";
+
+  let dots = 0;
+
+  div.innerText = "IA pensando";
+
+  const interval = setInterval(() => {
+    dots = (dots + 1) % 4;
+    div.innerText = "IA pensando" + ".".repeat(dots);
+  }, 400);
+
+  div._interval = interval;
+
+  return div;
+}
 
 /* =========================
    FETCH SEGURO
@@ -58,17 +95,14 @@ async function safeFetch(url, options = {}) {
 }
 
 /* =========================
-   MENSAGEM
+   MENSAGENS
 ========================= */
 function addMessage(content, role) {
   const div = document.createElement("div");
-
   div.className = "message " + role;
-
   div.innerHTML = marked.parse(content || "");
 
   chatEl.appendChild(div);
-
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
@@ -79,7 +113,6 @@ async function loadPDFs() {
   const data = await safeFetch("https://pdf-8cd2.onrender.com/api/pdfs");
 
   pdfs = Array.isArray(data) ? data : [];
-
   renderHistory();
 }
 
@@ -88,9 +121,7 @@ function renderHistory() {
 
   pdfs.forEach(pdf => {
     const div = document.createElement("div");
-
     div.className = "history-item";
-
     div.innerText = "📄 " + pdf.file_name;
 
     div.onclick = () => openPDF(pdf);
@@ -104,16 +135,16 @@ function renderHistory() {
 ========================= */
 async function openPDF(pdf) {
   currentPDF = pdf;
-
   statusEl.innerText = pdf.file_name;
 
   chatEl.innerHTML = "";
 
   const chatsData = await loadChats(pdf.id);
-
   chats = chatsData;
 
   renderChats(chats);
+
+  if (isMobile()) closeSidebar();
 
   if (chats.length > 0) {
     openChat(chats[0]);
@@ -165,11 +196,10 @@ async function openChat(chat) {
   if (!Array.isArray(messages)) return;
 
   messages.forEach(msg => {
-    addMessage(
-      msg.content,
-      msg.role === "user" ? "user" : "ai"
-    );
+    addMessage(msg.content, msg.role === "user" ? "user" : "ai");
   });
+
+  if (isMobile()) closeSidebar();
 
   renderChats(chats);
 }
@@ -182,8 +212,9 @@ function newChat() {
   activeChatId = null;
 
   chatEl.innerHTML = "";
-
   addMessage("Novo chat iniciado 🚀", "ai");
+
+  if (isMobile()) closeSidebar();
 }
 
 /* =========================
@@ -191,11 +222,9 @@ function newChat() {
 ========================= */
 async function askQuestion() {
   const q = questionInput.value;
-
   if (!q || !currentPDF) return;
 
   addMessage(q, "user");
-
   questionInput.value = "";
 
   if (!currentChat) {
@@ -203,9 +232,7 @@ async function askQuestion() {
       "https://pdf-8cd2.onrender.com/api/chats",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pdfId: currentPDF.id,
           title: q.slice(0, 30)
@@ -217,27 +244,23 @@ async function askQuestion() {
     activeChatId = newChat?.id;
   }
 
-  const loading = document.createElement("div");
-  loading.className = "message ai loading";
-  loading.innerText = "IA pensando...";
-
+  const loading = createLoading();
   chatEl.appendChild(loading);
 
   const data = await safeFetch(
     "https://pdf-8cd2.onrender.com/api/chat",
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         question: q,
         pdfId: currentPDF.id,
-        chatId: currentChat.id
+        chatId: currentChat?.id || null
       })
     }
   );
 
+  clearInterval(loading._interval);
   loading.remove();
 
   if (!data) {
@@ -249,10 +272,10 @@ async function askQuestion() {
 }
 
 /* =========================
-   UPLOAD PDF
+   UPLOAD
 ========================= */
 async function uploadPDF() {
-  const file = pdfFile.files[0];
+  const file = pdfFile?.files?.[0];
 
   if (!file) return alert("Escolha um PDF");
 
@@ -284,9 +307,7 @@ async function login() {
 
   if (data?.session) {
     document.getElementById("authScreen").style.display = "none";
-
-    welcomeText.innerText = `Olá 👋`;
-
+    welcomeText.innerText = "Olá 👋";
     loadPDFs();
   }
 }
@@ -297,7 +318,7 @@ async function logout() {
 }
 
 /* =========================
-   ENTER
+   ENTER FIX
 ========================= */
 questionInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") askQuestion();
@@ -312,3 +333,63 @@ supabaseClient.auth.getSession().then(({ data }) => {
     loadPDFs();
   }
 });
+
+/* =========================
+   SIDEBAR TOGGLE
+========================= */
+function toggleSidebar() {
+  document.getElementById("sidebar")?.classList.toggle("open");
+}
+
+/* =========================
+   CLOSE ON CLICK CHAT (MOBILE)
+========================= */
+document.getElementById("main")?.addEventListener("click", () => {
+  if (isMobile()) closeSidebar();
+});
+
+document.getElementById("main")?.addEventListener("click", () => {
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar")?.classList.remove("open");
+  }
+});
+
+/* =========================
+   SIDEBAR TOGGLE (MOBILE + WEB SAFE)
+========================= */
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+
+  sidebar.classList.toggle("open");
+}
+
+/* =========================
+   VOLTAR PARA LISTA DE CHATS
+========================= */
+function backToChats() {
+  currentChat = null;
+  activeChatId = null;
+
+  chatEl.innerHTML = "";
+
+  renderChats(chats);
+
+  // no mobile fecha sidebar automaticamente
+  if (window.innerWidth <= 768) {
+    document.getElementById("sidebar")?.classList.add("open");
+  }
+}
+
+function backToHome() {
+  currentChat = null;
+  activeChatId = null;
+  currentPDF = null;
+
+  chatEl.innerHTML = "";
+  historyEl.innerHTML = "";
+
+  loadPDFs();
+
+  statusEl.innerText = "Nenhum PDF aberto";
+}
