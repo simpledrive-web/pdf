@@ -323,6 +323,30 @@ button {
   color: white;
 }
 
-.app {
-  display: none;
+/* =========================
+   FIX ROLAGEM MOBILE
+========================= */
+
+/* permite scroll real no mobile */
+@media (max-width: 768px) {
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+
+  .main {
+    height: 100dvh; /* melhor que 100vh no mobile */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat {
+    flex: 1;
+    min-height: 0; /* 🔥 ESSENCIAL para o scroll funcionar */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
