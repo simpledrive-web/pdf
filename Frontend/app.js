@@ -306,10 +306,11 @@ async function login() {
   });
 
   if (data?.session) {
-    document.getElementById("authScreen").style.display = "none";
-    welcomeText.innerText = "Olá 👋";
-    loadPDFs();
-  }
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("app").style.display = "flex"; // 👈 ESSENCIAL
+  welcomeText.innerText = "Olá 👋";
+  loadPDFs();
+}
 }
 
 async function logout() {
@@ -330,7 +331,10 @@ questionInput.addEventListener("keydown", (e) => {
 supabaseClient.auth.getSession().then(({ data }) => {
   if (data.session) {
     document.getElementById("authScreen").style.display = "none";
+    document.getElementById("app").style.display = "flex";
     loadPDFs();
+  } else {
+    document.getElementById("app").style.display = "none";
   }
 });
 
@@ -393,3 +397,13 @@ function backToHome() {
 
   statusEl.innerText = "Nenhum PDF aberto";
 }
+
+window.showSignup = function () {
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("signupBox").style.display = "block";
+};
+
+window.showLogin = function () {
+  document.getElementById("loginBox").style.display = "block";
+  document.getElementById("signupBox").style.display = "none";
+};

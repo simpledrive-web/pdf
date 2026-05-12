@@ -322,3 +322,7 @@ button {
   font-size: 16px;
   color: white;
 }
+
+.app {
+  display: none;
+}
