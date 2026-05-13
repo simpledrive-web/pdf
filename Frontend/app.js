@@ -407,3 +407,58 @@ window.showLogin = function () {
   document.getElementById("loginBox").style.display = "block";
   document.getElementById("signupBox").style.display = "none";
 };
+
+/* =========================
+   TOGGLE PASSWORD
+========================= */
+function togglePassword(id) {
+  const input = document.getElementById(id);
+
+  if (!input) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+  } else {
+    input.type = "password";
+  }
+}
+
+/* =========================
+   SIGNUP
+========================= */
+async function signup() {
+
+  const email =
+    document.getElementById("signupEmail").value;
+
+  const password =
+    document.getElementById("signupPassword").value;
+
+  const confirm =
+    document.getElementById("confirmPassword").value;
+
+  if (!email || !password || !confirm) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
+  if (password !== confirm) {
+    alert("As senhas não conferem");
+    return;
+  }
+
+  const { data, error } =
+    await supabaseClient.auth.signUp({
+      email,
+      password
+    });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Conta criada com sucesso 🚀");
+
+  showLogin();
+}

@@ -322,3 +322,54 @@ button {
   font-size: 16px;
   color: white;
 }
+
+/* =========================
+   FIX ROLAGEM MOBILE
+========================= */
+
+/* permite scroll real no mobile */
+@media (max-width: 768px) {
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+
+  .main {
+    height: 100dvh; /* melhor que 100vh no mobile */
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat {
+    flex: 1;
+    min-height: 0; /* 🔥 ESSENCIAL para o scroll funcionar */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* =========================
+   FIX: ÚLTIMA MENSAGEM CORTADA
+========================= */
+
+/* dá espaço no final do chat pra não ficar atrás do input */
+.chat {
+  padding-bottom: 80px;
+}
+
+/* garante que o input não sobreponha conteúdo no mobile */
+.bottom {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+/* reforço mobile */
+@media (max-width: 768px) {
+  .chat {
+    padding-bottom: 100px;
+  }
+}
