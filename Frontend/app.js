@@ -308,7 +308,11 @@ async function login() {
   if (data?.session) {
   document.getElementById("authScreen").style.display = "none";
   document.getElementById("app").style.display = "flex"; // 👈 ESSENCIAL
-  welcomeText.innerText = "Olá 👋";
+  const user =
+  data.session.user.user_metadata;
+
+welcomeText.innerText =
+  `Olá, ${user.first_name} ${user.last_name} 👋`;
   loadPDFs();
 }
 }
@@ -328,14 +332,30 @@ questionInput.addEventListener("keydown", (e) => {
 /* =========================
    INIT
 ========================= */
+/* =========================
+   INIT
+========================= */
 supabaseClient.auth.getSession().then(({ data }) => {
+
   if (data.session) {
+
     document.getElementById("authScreen").style.display = "none";
     document.getElementById("app").style.display = "flex";
+
+    const user =
+      data.session.user.user_metadata;
+
+    welcomeText.innerText =
+      `Olá, ${user.first_name} ${user.last_name} 👋`;
+
     loadPDFs();
+
   } else {
+
     document.getElementById("app").style.display = "none";
+
   }
+
 });
 
 /* =========================
@@ -428,6 +448,12 @@ function togglePassword(id) {
 ========================= */
 async function signup() {
 
+  const firstName =
+    document.getElementById("firstName").value;
+
+  const lastName =
+    document.getElementById("lastName").value;
+
   const email =
     document.getElementById("signupEmail").value;
 
@@ -437,7 +463,7 @@ async function signup() {
   const confirm =
     document.getElementById("confirmPassword").value;
 
-  if (!email || !password || !confirm) {
+  if (!firstName || !lastName || !email || !password || !confirm) {
     alert("Preencha todos os campos");
     return;
   }
@@ -450,7 +476,13 @@ async function signup() {
   const { data, error } =
     await supabaseClient.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName
+        }
+      }
     });
 
   if (error) {
