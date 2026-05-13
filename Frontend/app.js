@@ -510,3 +510,63 @@ async function signup() {
 
   showLogin();
 }
+
+async function sendImage() {
+
+  const file =
+    document.getElementById("imageInput").files[0];
+
+  if (!file) return;
+
+  addMessage("📷 Imagem enviada", "user");
+
+  const loading = createLoading();
+  chatEl.appendChild(loading);
+
+  const fd = new FormData();
+
+  fd.append("image", file);
+
+  try {
+
+    const response = await fetch(
+      "https://pdf-8cd2.onrender.com/api/image-chat",
+      {
+        method: "POST",
+        body: fd
+      }
+    );
+
+    const data = await response.json();
+
+    clearInterval(loading._interval);
+    loading.remove();
+
+    addMessage(
+      `
+## Texto detectado:
+${data.text}
+
+---
+
+## IA:
+${data.answer}
+      `,
+      "ai"
+    );
+
+  } catch (err) {
+
+    clearInterval(loading._interval);
+    loading.remove();
+
+    addMessage(
+      "Erro ao analisar imagem 😭",
+      "ai"
+    );
+
+    console.log(err);
+
+  }
+
+}

@@ -6,6 +6,8 @@ import pdfRoutes from "./routes/pdfRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import chatAIRoutes from "./routes/chat.js";
+import imageRoutes from "./routes/image.js";
+import imageChatRoutes from "./routes/imageChat.js";
 
 dotenv.config();
 
@@ -25,6 +27,10 @@ app.use("/api/messages", messageRoutes);
 
 app.use("/api/chat", chatAIRoutes);
 
+app.use("/api", imageRoutes);
+
+app.use("/api", imageChatRoutes);
+
 /* 404 */
 
 app.use((req, res) => {
@@ -32,6 +38,7 @@ app.use((req, res) => {
   res.status(404).json({
     error:"Rota não encontrada"
   });
+
 });
 
 app.listen(
@@ -41,5 +48,6 @@ app.listen(
     console.log(
       `🚀 Backend rodando em http://localhost:${process.env.PORT || 5000}`
     );
+
   }
 );
