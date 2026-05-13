@@ -308,7 +308,19 @@ async function login() {
   if (data?.session) {
   document.getElementById("authScreen").style.display = "none";
   document.getElementById("app").style.display = "flex"; // 👈 ESSENCIAL
-  welcomeText.innerText = "Olá 👋";
+ const user =
+  data.session.user.user_metadata || {};
+
+const firstName = user.first_name || "";
+const lastName = user.last_name || "";
+
+const fullName =
+  `${firstName} ${lastName}`.trim();
+
+welcomeText.innerText =
+  fullName
+    ? `Olá, ${fullName} 👋`
+    : "Olá 👋";
   loadPDFs();
 }
 }
@@ -328,14 +340,38 @@ questionInput.addEventListener("keydown", (e) => {
 /* =========================
    INIT
 ========================= */
+/* =========================
+   INIT
+========================= */
 supabaseClient.auth.getSession().then(({ data }) => {
+
   if (data.session) {
+
     document.getElementById("authScreen").style.display = "none";
     document.getElementById("app").style.display = "flex";
+
+    const user =
+  data.session.user.user_metadata || {};
+
+const firstName = user.first_name || "";
+const lastName = user.last_name || "";
+
+const fullName =
+  `${firstName} ${lastName}`.trim();
+
+welcomeText.innerText =
+  fullName
+    ? `Olá, ${fullName} 👋`
+    : "Olá 👋";
+
     loadPDFs();
+
   } else {
+
     document.getElementById("app").style.display = "none";
+
   }
+
 });
 
 /* =========================
@@ -407,3 +443,130 @@ window.showLogin = function () {
   document.getElementById("loginBox").style.display = "block";
   document.getElementById("signupBox").style.display = "none";
 };
+
+/* =========================
+   TOGGLE PASSWORD
+========================= */
+function togglePassword(id) {
+  const input = document.getElementById(id);
+
+  if (!input) return;
+
+  if (input.type === "password") {
+    input.type = "text";
+  } else {
+    input.type = "password";
+  }
+}
+
+/* =========================
+   SIGNUP
+========================= */
+async function signup() {
+
+  const firstName =
+    document.getElementById("firstName").value;
+
+  const lastName =
+    document.getElementById("lastName").value;
+
+  const email =
+    document.getElementById("signupEmail").value;
+
+  const password =
+    document.getElementById("signupPassword").value;
+
+  const confirm =
+    document.getElementById("confirmPassword").value;
+
+  if (!firstName || !lastName || !email || !password || !confirm) {
+    alert("Preencha todos os campos");
+    return;
+  }
+
+  if (password !== confirm) {
+    alert("As senhas não conferem");
+    return;
+  }
+
+  const { data, error } =
+    await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName
+        }
+      }
+    });
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  alert("Conta criada com sucesso 🚀");
+
+  showLogin();
+}
+
+async function sendImage() {
+
+  const file =
+    document.getElementById("imageInput").files[0];
+
+  if (!file) return;
+
+  addMessage("📷 Imagem enviada", "user");
+
+  const loading = createLoading();
+  chatEl.appendChild(loading);
+
+  const fd = new FormData();
+
+  fd.append("image", file);
+
+  try {
+
+    const response = await fetch(
+      "https://pdf-8cd2.onrender.com/api/image-chat",
+      {
+        method: "POST",
+        body: fd
+      }
+    );
+
+    const data = await response.json();
+
+    clearInterval(loading._interval);
+    loading.remove();
+
+    addMessage(
+      `
+## Texto detectado:
+${data.text}
+
+---
+
+## IA:
+${data.answer}
+      `,
+      "ai"
+    );
+
+  } catch (err) {
+
+    clearInterval(loading._interval);
+    loading.remove();
+
+    addMessage(
+      "Erro ao analisar imagem 😭",
+      "ai"
+    );
+
+    console.log(err);
+
+  }
+
+}
