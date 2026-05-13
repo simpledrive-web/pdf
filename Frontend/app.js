@@ -308,11 +308,19 @@ async function login() {
   if (data?.session) {
   document.getElementById("authScreen").style.display = "none";
   document.getElementById("app").style.display = "flex"; // 👈 ESSENCIAL
-  const user =
-  data.session.user.user_metadata;
+ const user =
+  data.session.user.user_metadata || {};
+
+const firstName = user.first_name || "";
+const lastName = user.last_name || "";
+
+const fullName =
+  `${firstName} ${lastName}`.trim();
 
 welcomeText.innerText =
-  `Olá, ${user.first_name} ${user.last_name} 👋`;
+  fullName
+    ? `Olá, ${fullName} 👋`
+    : "Olá 👋";
   loadPDFs();
 }
 }
@@ -343,10 +351,18 @@ supabaseClient.auth.getSession().then(({ data }) => {
     document.getElementById("app").style.display = "flex";
 
     const user =
-      data.session.user.user_metadata;
+  data.session.user.user_metadata || {};
 
-    welcomeText.innerText =
-      `Olá, ${user.first_name} ${user.last_name} 👋`;
+const firstName = user.first_name || "";
+const lastName = user.last_name || "";
+
+const fullName =
+  `${firstName} ${lastName}`.trim();
+
+welcomeText.innerText =
+  fullName
+    ? `Olá, ${fullName} 👋`
+    : "Olá 👋";
 
     loadPDFs();
 
