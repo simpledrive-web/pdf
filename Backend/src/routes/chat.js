@@ -2,13 +2,13 @@ import express from "express";
 import { supabase } from "../lib/supabase.js";
 import { auth } from "../middleware/auth.js";
 import { askAI } from "../services/aiService.js";
+import { systemPrompt } from "../services/systemPrompt.js";
 
 const router = express.Router();
 
 /* =========================
    DETECTA INTENÇÃO
 ========================= */
-
 function detectIntent(question) {
   const q = question.toLowerCase();
 
@@ -49,131 +49,113 @@ function detectIntent(question) {
 /* =========================
    CHAT ROUTE
 ========================= */
-
 router.post("/", auth, async (req, res) => {
   try {
     const { question, pdfId, chatId } = req.body;
 
     if (!question) {
-      return res.status(400).json({
-        error: "Pergunta obrigatória"
-      });
+      return res.status(400).json({ error: "Pergunta obrigatória" });
     }
 
     /* =========================
-       BUSCA PDF (OPCIONAL)
+       PDF (OPCIONAL)
     ========================= */
-
     let content = "";
 
     if (pdfId) {
-      const { data: pdf, error } = await supabase
+      const { data: pdf } = await supabase
         .from("pdfs")
         .select("content")
         .eq("id", pdfId)
         .single();
 
-      if (!error && pdf) {
-        content = pdf.content || "";
-      }
+      content = pdf?.content || "";
     }
 
     /* =========================
-       INTELIGÊNCIA SIMPLES
+       MEMÓRIA DO CHAT (ÚLTIMAS 12 MSGS)
     ========================= */
+    let historyText = "";
 
+    if (chatId) {
+      const { data: history } = await supabase
+        .from("messages")
+        .select("role, content")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true })
+        .limit(12);
+
+      historyText =
+        history?.map(m =>
+          m.role === "user"
+            ? `Usuário: ${m.content}`
+            : `Assistente: ${m.content}`
+        ).join("\n") || "";
+    }
+
+    /* =========================
+       INTENÇÃO
+    ========================= */
     const intent = detectIntent(question);
 
-    let prompt = "";
+    let taskPrompt = "";
 
     switch (intent) {
       case "summary":
-        prompt = `
-Crie um resumo simples e didático do conteúdo abaixo.
-
-Regras:
-- não copiar texto
-- linguagem simples
-- tópicos claros
-
-CONTEÚDO:
-${content || "Nenhum PDF fornecido."}
-`;
+        taskPrompt = "Resuma de forma clara e organizada em tópicos.";
         break;
 
       case "words":
-        prompt = `
-Explique vocabulário de forma simples.
-
-Inclua:
-- tradução
-- significado
-- exemplos
-
-CONTEÚDO:
-${content || "Nenhum PDF fornecido."}
-
-Pergunta:
-${question}
-`;
+        taskPrompt = "Explique vocabulário com significado, tradução e exemplos.";
         break;
 
       case "examples":
-        prompt = `
-Crie exemplos práticos.
-
-Regras:
-- frases simples
-- tradução
-- explicação curta
-
-CONTEÚDO:
-${content || "Nenhum PDF fornecido."}
-
-Pergunta:
-${question}
-`;
+        taskPrompt = "Crie exemplos práticos com frases simples.";
         break;
 
       case "grammar":
-        prompt = `
-Explique gramática de forma simples.
-
-Regras:
-- estilo professor
-- exemplos
-- não copiar texto
-
-CONTEÚDO:
-${content || "Nenhum PDF fornecido."}
-
-Pergunta:
-${question}
-`;
+        taskPrompt = "Explique gramática de forma simples como um professor.";
         break;
 
       default:
-        prompt = `
-Responda normalmente a pergunta.
+        taskPrompt = "Responda normalmente de forma útil e clara.";
+    }
 
-CONTEÚDO:
-${content || "Nenhum PDF fornecido."}
+    /* =========================
+       PROMPT FINAL (PROFISSIONAL)
+    ========================= */
+    const prompt = `
+${systemPrompt}
 
-Pergunta:
+---
+
+HISTÓRICO DA CONVERSA:
+${historyText || "Sem histórico ainda."}
+
+---
+
+CONTEÚDO DO PDF:
+${content || "Nenhum PDF anexado."}
+
+---
+
+TAREFA:
+${taskPrompt}
+
+---
+
+PERGUNTA:
 ${question}
 `;
-    }
 
     /* =========================
        IA
     ========================= */
-
     const answer = await askAI(prompt);
 
     /* =========================
-       SALVA MENSAGENS (SE CHAT EXISTIR)
+       SALVA MEMÓRIA
     ========================= */
-
     if (chatId) {
       await supabase.from("messages").insert([
         {
@@ -192,15 +174,10 @@ ${question}
       ]);
     }
 
-    /* =========================
-       RESPONSE
-    ========================= */
-
     return res.json({ answer });
 
   } catch (err) {
     console.log("❌ CHAT ERROR:", err);
-
     return res.status(500).json({
       error: "Erro ao processar chat"
     });
