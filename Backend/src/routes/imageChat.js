@@ -7,16 +7,10 @@ import sharp from "sharp";
 
 const router = express.Router();
 
-/* =========================
-   MULTER
-========================= */
 const upload = multer({
   dest: "uploads/"
 });
 
-/* =========================
-   IMAGE CHAT
-========================= */
 router.post(
   "/image-chat",
   upload.single("image"),
@@ -24,27 +18,29 @@ router.post(
 
     try {
 
-      /* =========================
-         VALIDAR IMAGEM
-      ========================= */
+      // =========================
+      // VALIDAÇÃO
+      // =========================
       if (!req.file) {
+
         return res.status(400).json({
           error: "Imagem não enviada"
         });
+
       }
 
-      /* =========================
-         DADOS FRONT
-      ========================= */
+      // =========================
+      // DADOS FRONT
+      // =========================
       const userMessage =
         req.body.userMessage || "";
 
       const language =
-        req.body.language || "";
+        req.body.language || "português";
 
-      /* =========================
-         PROCESSAMENTO OCR
-      ========================= */
+      // =========================
+      // OCR MELHORADO
+      // =========================
       const processedImage =
         req.file.path + "-processed.png";
 
@@ -64,55 +60,76 @@ router.post(
       const extractedText =
         result.data.text || "";
 
-      /* =========================
-         CONVERTER IMAGEM BASE64
-      ========================= */
-      const imageBuffer =
-        fs.readFileSync(req.file.path);
+      // =========================
+      // REMOVE ARQUIVOS TEMP
+      // =========================
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
 
-      const imageBase64 =
-        `data:${req.file.mimetype};base64,${imageBuffer.toString("base64")}`;
+      if (fs.existsSync(processedImage)) {
+        fs.unlinkSync(processedImage);
+      }
 
-      /* =========================
-         APAGAR ARQUIVOS
-      ========================= */
-      fs.unlinkSync(req.file.path);
-      fs.unlinkSync(processedImage);
-
-      /* =========================
-         PROMPT IA
-      ========================= */
+      // =========================
+      // PROMPT IA
+      // =========================
       const prompt = `
-Você é um professor inteligente, moderno e prestativo.
+Você é um professor inteligente,
+prestativo e especializado em OCR.
 
-Analise o texto extraído da imagem e:
+Analise SOMENTE o conteúdo da imagem.
 
-1. Explique resumidamente o conteúdo
-2. Identifique o tema da atividade
-3. Crie exercícios NOVOS baseados no conteúdo da imagem
-4. O exercício DEVE ser criado no idioma solicitado pelo usuário
-5. Use markdown bonito
-6. Nunca diga que não existe PDF ou imagem
-7. Nunca peça a imagem novamente
-8. Nunca invente conteúdo fora da imagem
-9. Sempre use o OCR abaixo como contexto principal
-10. Se o usuário pedir exercícios, crie diretamente
-11. Se o usuário pedir tradução, traduza
-12. Se o usuário pedir resumo, resuma
+REGRAS IMPORTANTES:
+
+1. Nunca diga:
+- "não existe PDF"
+- "nenhuma imagem enviada"
+- "não há imagem"
+
+2. A imagem JÁ foi enviada.
+
+3. Sempre responda no idioma solicitado.
+
+4. Se o usuário pedir:
+- resumo
+- exercícios
+- tradução
+- perguntas
+- explicação
+
+Você deve usar SOMENTE o texto da imagem.
+
+5. Nunca invente conteúdo que não exista.
+
+6. Formate bonito usando markdown.
+
+7. Se o texto estiver em inglês,
+você pode ensinar inglês.
+
+8. Se o usuário pedir exercícios,
+crie exercícios NOVOS baseados
+na imagem.
+
+9. Se o usuário pedir resumo,
+faça resumo da imagem.
+
+10. Se o usuário pedir em inglês,
+responda totalmente em inglês.
 
 Idioma solicitado:
-${language || "mesmo idioma da conversa"}
+${language}
 
 Mensagem do usuário:
-${userMessage || "Explique a imagem"}
+${userMessage}
 
 Texto extraído da imagem:
 ${extractedText}
 `;
 
-      /* =========================
-         GROQ
-      ========================= */
+      // =========================
+      // GROQ
+      // =========================
       const response = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
         {
@@ -126,11 +143,17 @@ ${extractedText}
             model: "llama-3.3-70b-versatile",
             messages: [
               {
+                role: "system",
+                content:
+                  "Você analisa imagens OCR e responde corretamente no idioma solicitado."
+              },
+              {
                 role: "user",
                 content: prompt
               }
             ],
-            temperature: 0.7
+            temperature: 0.7,
+            max_tokens: 1200
           })
         }
       );
@@ -139,16 +162,18 @@ ${extractedText}
 
       console.log(data);
 
+      // =========================
+      // RESPOSTA IA
+      // =========================
       const answer =
         data?.choices?.[0]?.message?.content
         || "Não consegui analisar a imagem.";
 
-      /* =========================
-         RESPOSTA
-      ========================= */
+      // =========================
+      // RESPONSE FINAL
+      // =========================
       res.json({
         success: true,
-        imageUrl: imageBase64,
         text: extractedText,
         answer
       });
