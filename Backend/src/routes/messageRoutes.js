@@ -89,4 +89,58 @@ router.get(
   }
 );
 
+/* ===== SALVAR MENSAGEM ===== */
+
+router.post(
+  "/",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const {
+        chat_id,
+        role,
+        content,
+        type
+      } = req.body;
+
+      const {
+        data,
+        error
+      } = await supabase
+        .from("messages")
+        .insert([
+          {
+            chat_id,
+            role,
+            content,
+            type: type || "text"
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+
+        return res.status(500).json({
+          error: error.message
+        });
+
+      }
+
+      res.json(data);
+
+    } catch(err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        error: "Erro ao salvar mensagem"
+      });
+
+    }
+  }
+);
+
 export default router;

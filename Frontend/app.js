@@ -97,12 +97,44 @@ async function safeFetch(url, options = {}) {
 /* =========================
    MENSAGENS
 ========================= */
-function addMessage(content, role) {
+/* =========================
+   MENSAGENS
+========================= */
+function addMessage(content, role, type = "text") {
+
   const div = document.createElement("div");
-  div.className = "message " + role;
-  div.innerHTML = marked.parse(content || "");
+
+  div.className =
+    role === "user"
+      ? "message user"
+      : "message ai";
+
+  // IMAGEM
+  if (type === "image") {
+
+    const img = document.createElement("img");
+
+    img.src = content;
+
+    img.className = "chat-image";
+
+    img.style.maxWidth = "250px";
+    img.style.borderRadius = "12px";
+    img.style.marginTop = "6px";
+
+    div.appendChild(img);
+
+  } else {
+
+    // TEXTO NORMAL
+    div.innerHTML = DOMPurify.sanitize(
+  marked.parse(content)
+);
+
+  }
 
   chatEl.appendChild(div);
+
   chatEl.scrollTop = chatEl.scrollHeight;
 }
 
@@ -196,8 +228,14 @@ async function openChat(chat) {
   if (!Array.isArray(messages)) return;
 
   messages.forEach(msg => {
-    addMessage(msg.content, msg.role === "user" ? "user" : "ai");
-  });
+
+  addMessage(
+    msg.content,
+    msg.role === "user" ? "user" : "ai",
+    msg.type || "text"
+  );
+
+});
 
   if (isMobile()) closeSidebar();
 
@@ -377,12 +415,6 @@ welcomeText.innerText =
 
 });
 
-/* =========================
-   SIDEBAR TOGGLE
-========================= */
-function toggleSidebar() {
-  document.getElementById("sidebar")?.classList.toggle("open");
-}
 
 /* =========================
    CLOSE ON CLICK CHAT (MOBILE)
@@ -401,7 +433,9 @@ document.getElementById("main")?.addEventListener("click", () => {
    SIDEBAR TOGGLE (MOBILE + WEB SAFE)
 ========================= */
 function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar");
+  const sidebar =
+    document.getElementById("sidebar");
+
   if (!sidebar) return;
 
   sidebar.classList.toggle("open");
@@ -517,13 +551,40 @@ async function signup() {
 async function sendImage() {
 
   const file =
-    document.getElementById("imageInput").files[0];
+    document.getElementById("imageInput")?.files?.[0];
 
-  if (!file) return;
+  if (!file) {
+    alert("Escolha uma imagem");
+    return;
+  }
 
-  addMessage("📷 Imagem enviada", "user");
+  // cria chat automaticamente
+  if (!currentChat) {
+
+    const newChat = await safeFetch(
+      "https://pdf-8cd2.onrender.com/api/chats",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title: "Imagem enviada"
+        })
+      }
+    );
+
+    if (!newChat) {
+      addMessage("Erro ao criar chat", "ai");
+      return;
+    }
+
+    currentChat = newChat;
+    activeChatId = newChat.id;
+  }
 
   const loading = createLoading();
+
   chatEl.appendChild(loading);
 
   const fd = new FormData();
@@ -532,7 +593,7 @@ async function sendImage() {
 
   try {
 
-    const response = await fetch(
+    const data = await safeFetch(
       "https://pdf-8cd2.onrender.com/api/image-chat",
       {
         method: "POST",
@@ -540,36 +601,90 @@ async function sendImage() {
       }
     );
 
-    const data = await response.json();
-
     clearInterval(loading._interval);
     loading.remove();
 
+    if (!data) {
+
+      addMessage(
+        "Erro ao analisar imagem 😭",
+        "ai"
+      );
+
+      return;
+    }
+
+    const imageUrl =
+      data.imageUrl ||
+      URL.createObjectURL(file);
+
+    // mostra imagem
     addMessage(
-      `
-## Texto detectado:
-${data.text}
+      imageUrl,
+      "user",
+      "image"
+    );
+
+    // salva imagem
+    await safeFetch(
+      "https://pdf-8cd2.onrender.com/api/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: currentChat.id,
+          role: "user",
+          content: imageUrl,
+          type: "image"
+        })
+      }
+    );
+
+    // salva resposta IA
+    await safeFetch(
+      "https://pdf-8cd2.onrender.com/api/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: currentChat.id,
+          role: "assistant",
+          content: data.answer,
+          type: "text"
+        })
+      }
+    );
+
+    addMessage(
+`
+## Texto detectado
+
+${data.text || "Nenhum texto encontrado"}
 
 ---
 
-## IA:
-${data.answer}
-      `,
+## IA
+
+${data.answer || "Sem resposta"}
+`,
       "ai"
     );
 
   } catch (err) {
 
     clearInterval(loading._interval);
+
     loading.remove();
+
+    console.log(err);
 
     addMessage(
       "Erro ao analisar imagem 😭",
       "ai"
     );
-
-    console.log(err);
-
   }
-
 }

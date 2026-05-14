@@ -2,23 +2,39 @@
 <html lang="pt-BR">
 
 <head>
+
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
 
   <title>PDF AI</title>
 
   <link rel="stylesheet" href="style.css" />
 
+  <!-- MARKDOWN -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- DOMPURIFY -->
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
+  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 
 <body>
 
   <!-- =========================
-       LOGIN / AUTH
+       AUTH
   ========================== -->
-  <div id="authScreen" class="auth-screen">
+
+  <div
+    id="authScreen"
+    class="auth-screen"
+  >
 
     <div class="auth-box">
 
@@ -27,37 +43,109 @@
       <!-- LOGIN -->
       <div id="loginBox">
 
-        <input id="email" placeholder="Email" />
+        <input
+          id="email"
+          type="email"
+          placeholder="Email"
+          autocomplete="email"
+        />
 
         <div class="input-password">
-          <input id="password" type="password" placeholder="Senha" />
-          <span class="eye" onclick="togglePassword('password')">👁️</span>
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Senha"
+            autocomplete="current-password"
+          />
+
+          <span
+            class="eye"
+            onclick="togglePassword('password')"
+          >
+            👁️
+          </span>
+
         </div>
 
-        <button onclick="login()">Entrar</button>
-        <button onclick="showSignup()">Criar conta</button>
+        <button onclick="login()">
+          Entrar
+        </button>
+
+        <button onclick="showSignup()">
+          Criar conta
+        </button>
 
       </div>
 
       <!-- SIGNUP -->
-      <div id="signupBox" style="display:none;">
+      <div
+        id="signupBox"
+        style="display:none;"
+      >
 
-        <input id="firstName" placeholder="Nome" />
-        <input id="lastName" placeholder="Sobrenome" />
-        <input id="signupEmail" placeholder="Email" />
+        <input
+          id="firstName"
+          placeholder="Nome"
+          autocomplete="given-name"
+        />
+
+        <input
+          id="lastName"
+          placeholder="Sobrenome"
+          autocomplete="family-name"
+        />
+
+        <input
+          id="signupEmail"
+          type="email"
+          placeholder="Email"
+          autocomplete="email"
+        />
 
         <div class="input-password">
-          <input id="signupPassword" type="password" placeholder="Senha" />
-          <span class="eye" onclick="togglePassword('signupPassword')">👁️</span>
+
+          <input
+            id="signupPassword"
+            type="password"
+            placeholder="Senha"
+            autocomplete="new-password"
+          />
+
+          <span
+            class="eye"
+            onclick="togglePassword('signupPassword')"
+          >
+            👁️
+          </span>
+
         </div>
 
         <div class="input-password">
-          <input id="confirmPassword" type="password" placeholder="Confirmar senha" />
-          <span class="eye" onclick="togglePassword('confirmPassword')">👁️</span>
+
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirmar senha"
+            autocomplete="new-password"
+          />
+
+          <span
+            class="eye"
+            onclick="togglePassword('confirmPassword')"
+          >
+            👁️
+          </span>
+
         </div>
 
-        <button onclick="signup()">Criar conta</button>
-        <button onclick="showLogin()">Voltar</button>
+        <button onclick="signup()">
+          Criar conta
+        </button>
+
+        <button onclick="showLogin()">
+          Voltar
+        </button>
 
       </div>
 
@@ -68,71 +156,161 @@
   <!-- =========================
        APP
   ========================== -->
-  <div class="app" id="app">
 
-    <!-- TOP MOBILE BAR -->
+  <div
+    class="app"
+    id="app"
+    style="display:none;"
+  >
+
+    <!-- MOBILE TOPBAR -->
+
     <div class="mobile-topbar">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+
+      <button
+        class="hamburger"
+        onclick="toggleSidebar()"
+      >
+        ☰
+      </button>
+
     </div>
 
     <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
+
+    <aside
+      class="sidebar"
+      id="sidebar"
+    >
 
       <div class="user-bar">
+
         <div>
-          <div class="logo">PDF AI 🚀</div>
-          <div class="welcome-text" id="welcomeText">Olá 👋</div>
+
+          <div class="logo">
+            PDF AI 🚀
+          </div>
+
+          <div
+            class="welcome-text"
+            id="welcomeText"
+          >
+            Olá 👋
+          </div>
+
         </div>
 
-        <button onclick="logout()">🚪</button>
+        <button onclick="logout()">
+          🚪
+        </button>
+
       </div>
+
+      <!-- UPLOAD -->
 
       <div class="upload-area">
-        <input type="file" id="pdfFile" />
-        <button onclick="uploadPDF()">Upload PDF</button>
-        <button onclick="newChat()">Novo Chat</button>
+
+        <input
+          type="file"
+          id="pdfFile"
+          accept=".pdf"
+        />
+
+        <button onclick="uploadPDF()">
+          Upload PDF
+        </button>
+
+        <button onclick="newChat()">
+          Novo Chat
+        </button>
+
       </div>
 
-      <div class="history" id="history"></div>
+      <!-- HISTÓRICO -->
+
+      <div
+        class="history"
+        id="history"
+      ></div>
 
     </aside>
 
-    <!-- CHAT -->
-    <main class="main" id="main">
+    <!-- MAIN -->
 
- <div class="topbar">
-  
-  <button class="back-btn" onclick="backToHome()">←</button>
+    <main
+      class="main"
+      id="main"
+    >
 
-  <div class="topbar-title" id="status">
-    Chat
-  </div>
+      <!-- TOPBAR -->
 
-  <div style="width:40px;"></div>
+      <div class="topbar">
 
-</div>
+        <button
+          class="back-btn"
+          onclick="backToHome()"
+        >
+          ←
+        </button>
 
-      <div class="chat" id="chat"></div>
+        <div
+          class="topbar-title"
+          id="status"
+        >
+          Nenhum PDF aberto
+        </div>
+
+        <div style="width:40px;"></div>
+
+      </div>
+
+      <!-- CHAT -->
+
+      <div
+        class="chat"
+        id="chat"
+      ></div>
+
+      <!-- INPUT -->
 
       <div class="bottom">
-        <input id="question" placeholder="Pergunte algo..." />
-        <button onclick="askQuestion()">Enviar</button>
-        <input
-  type="file"
-  id="imageInput"
-  accept="image/*"
-  style="display:none"
-  onchange="sendImage()"
-/>
 
-<button onclick="document.getElementById('imageInput').click()">
-  📷
-</button>
+        <input
+          id="question"
+          placeholder="Pergunte algo..."
+        />
+
+        <button onclick="askQuestion()">
+          Enviar
+        </button>
+
+        <!-- INPUT IMAGEM -->
+
+        <input
+          type="file"
+          id="imageInput"
+          accept="image/*"
+          style="display:none;"
+          onchange="sendImage()"
+        />
+
+        <button
+          onclick="
+            document
+              .getElementById('imageInput')
+              .click()
+          "
+        >
+          📷
+        </button>
+
       </div>
 
     </main>
 
   </div>
+
+  <!-- APP -->
 
   <script src="app.js"></script>
 
