@@ -7,10 +7,16 @@ import sharp from "sharp";
 
 const router = express.Router();
 
+/* =========================
+   MULTER
+========================= */
 const upload = multer({
   dest: "uploads/"
 });
 
+/* =========================
+   IMAGE CHAT
+========================= */
 router.post(
   "/image-chat",
   upload.single("image"),
@@ -18,26 +24,27 @@ router.post(
 
     try {
 
+      /* =========================
+         VALIDAR IMAGEM
+      ========================= */
       if (!req.file) {
-
         return res.status(400).json({
           error: "Imagem não enviada"
         });
-
       }
 
-      // mensagem opcional do usuário
+      /* =========================
+         DADOS FRONT
+      ========================= */
       const userMessage =
-        req.body.message || "";
+        req.body.userMessage || "";
 
-      // idioma opcional
       const language =
         req.body.language || "";
 
-      // =========================
-      // PROCESSAMENTO OCR
-      // =========================
-
+      /* =========================
+         PROCESSAMENTO OCR
+      ========================= */
       const processedImage =
         req.file.path + "-processed.png";
 
@@ -55,48 +62,57 @@ router.post(
         );
 
       const extractedText =
-        result.data.text;
+        result.data.text || "";
 
-      // remove arquivos temporários
+      /* =========================
+         CONVERTER IMAGEM BASE64
+      ========================= */
+      const imageBuffer =
+        fs.readFileSync(req.file.path);
+
+      const imageBase64 =
+        `data:${req.file.mimetype};base64,${imageBuffer.toString("base64")}`;
+
+      /* =========================
+         APAGAR ARQUIVOS
+      ========================= */
       fs.unlinkSync(req.file.path);
       fs.unlinkSync(processedImage);
 
-      // =========================
-      // PROMPT IA
-      // =========================
-
+      /* =========================
+         PROMPT IA
+      ========================= */
       const prompt = `
-Você é um professor inteligente e prestativo.
+Você é um professor inteligente, moderno e prestativo.
 
 Analise o texto extraído da imagem e:
 
 1. Explique resumidamente o conteúdo
 2. Identifique o tema da atividade
-3. Crie um exercício NOVO baseado no conteúdo
+3. Crie exercícios NOVOS baseados no conteúdo da imagem
 4. O exercício DEVE ser criado no idioma solicitado pelo usuário
 5. Use markdown bonito
-6. Nunca diga que não existe PDF
-7. Nunca invente informações fora da imagem
-
-IMPORTANTE:
-- Se o usuário pedir inglês, responda em inglês
-- Se pedir português, responda em português
-- Se não pedir idioma, use o idioma predominante da conversa
+6. Nunca diga que não existe PDF ou imagem
+7. Nunca peça a imagem novamente
+8. Nunca invente conteúdo fora da imagem
+9. Sempre use o OCR abaixo como contexto principal
+10. Se o usuário pedir exercícios, crie diretamente
+11. Se o usuário pedir tradução, traduza
+12. Se o usuário pedir resumo, resuma
 
 Idioma solicitado:
-${language || "automático"}
+${language || "mesmo idioma da conversa"}
 
 Mensagem do usuário:
-${userMessage}
+${userMessage || "Explique a imagem"}
 
-Texto detectado:
+Texto extraído da imagem:
 ${extractedText}
 `;
 
-      // =========================
-      // GROQ
-      // =========================
-
+      /* =========================
+         GROQ
+      ========================= */
       const response = await fetch(
         "https://api.groq.com/openai/v1/chat/completions",
         {
@@ -124,14 +140,15 @@ ${extractedText}
       console.log(data);
 
       const answer =
-        data.choices?.[0]?.message?.content
-        || "Não consegui analisar.";
+        data?.choices?.[0]?.message?.content
+        || "Não consegui analisar a imagem.";
 
-      // =========================
-      // RESPOSTA
-      // =========================
-
+      /* =========================
+         RESPOSTA
+      ========================= */
       res.json({
+        success: true,
+        imageUrl: imageBase64,
         text: extractedText,
         answer
       });
@@ -141,6 +158,7 @@ ${extractedText}
       console.log(err);
 
       res.status(500).json({
+        success: false,
         error: "Erro imagem IA"
       });
 
