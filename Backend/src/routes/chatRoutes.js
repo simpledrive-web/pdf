@@ -58,38 +58,22 @@ router.post(
 
     try{
 
-      const {
-        pdfId,
-        title
-      } = req.body;
+      const { pdfId = null, title } = req.body;
 
-      console.log("BODY:", req.body);
-
-      if(!pdfId){
-
-        return res.status(400).json({
-          error:"pdfId obrigatório"
-        });
-      }
-
-      const {
-        data,
-        error
-      } = await supabase
-        .from("chats")
-        .insert([
-          {
-            pdf_id: pdfId,
-
-            title:
-              title || "Novo Chat",
-
-            user_id:
-              req.user.id
-          }
-        ])
-        .select()
-        .single();
+const {
+  data,
+  error
+} = await supabase
+  .from("chats")
+  .insert([
+    {
+      pdf_id: pdfId, // pode ser null
+      title: title || "Novo Chat",
+      user_id: req.user.id
+    }
+  ])
+  .select()
+  .single();
 
       console.log("CHAT:", data);
       console.log("ERROR:", error);

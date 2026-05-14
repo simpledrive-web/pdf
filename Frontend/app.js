@@ -222,44 +222,47 @@ function newChat() {
 ========================= */
 async function askQuestion() {
   const q = questionInput.value;
-  if (!q || !currentPDF) return;
+  if (!q) return;
 
   addMessage(q, "user");
   questionInput.value = "";
 
   if (!currentChat) {
-    const newChat = await safeFetch(
-      "https://pdf-8cd2.onrender.com/api/chats",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pdfId: currentPDF.id,
-          title: q.slice(0, 30)
-        })
-      }
-    );
-
-    currentChat = newChat;
-    activeChatId = newChat?.id;
-  }
-
-  const loading = createLoading();
-  chatEl.appendChild(loading);
-
-  const data = await safeFetch(
-    "https://pdf-8cd2.onrender.com/api/chat",
+  const newChat = await safeFetch(
+    "https://pdf-8cd2.onrender.com/api/chats",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        question: q,
-        pdfId: currentPDF.id,
-        chatId: currentChat?.id || null
+        title: q.slice(0, 30)
       })
     }
   );
 
+  if (newChat) {
+    currentChat = newChat;
+    activeChatId = newChat.id;
+  } else {
+    addMessage("Erro ao criar chat", "ai");
+    return;
+  }
+}
+
+  const loading = createLoading();
+  chatEl.appendChild(loading);
+
+ const data = await safeFetch(
+  "https://pdf-8cd2.onrender.com/api/chat",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      question: q,
+      pdfId: currentPDF?.id || null,
+      chatId: currentChat?.id || null
+    })
+  }
+);
   clearInterval(loading._interval);
   loading.remove();
 

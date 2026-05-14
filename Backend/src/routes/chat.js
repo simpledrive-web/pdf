@@ -1,5 +1,4 @@
 import express from "express";
-
 import { supabase } from "../lib/supabase.js";
 import { auth } from "../middleware/auth.js";
 import { askAI } from "../services/aiService.js";
@@ -19,9 +18,7 @@ function detectIntent(question) {
     q.includes("explique") ||
     q.includes("sobre o que") ||
     q.includes("explicação")
-  ) {
-    return "summary";
-  }
+  ) return "summary";
 
   if (
     q.includes("palavra") ||
@@ -30,27 +27,21 @@ function detectIntent(question) {
     q.includes("tradu") ||
     q.includes("ingles") ||
     q.includes("inglês")
-  ) {
-    return "words";
-  }
+  ) return "words";
 
   if (
     q.includes("exemplo") ||
     q.includes("frase") ||
     q.includes("usar") ||
     q.includes("aplicar")
-  ) {
-    return "examples";
-  }
+  ) return "examples";
 
   if (
     q.includes("gramatica") ||
     q.includes("gramática") ||
     q.includes("simple present") ||
     q.includes("adverb")
-  ) {
-    return "grammar";
-  }
+  ) return "grammar";
 
   return "ai";
 }
@@ -63,32 +54,32 @@ router.post("/", auth, async (req, res) => {
   try {
     const { question, pdfId, chatId } = req.body;
 
-    if (!question || !pdfId) {
+    if (!question) {
       return res.status(400).json({
-        error: "Dados inválidos"
+        error: "Pergunta obrigatória"
       });
     }
 
     /* =========================
-       BUSCA PDF
+       BUSCA PDF (OPCIONAL)
     ========================= */
 
-    const { data: pdf, error } = await supabase
-      .from("pdfs")
-      .select("*")
-      .eq("id", pdfId)
-      .single();
+    let content = "";
 
-    if (error || !pdf) {
-      return res.status(404).json({
-        error: "PDF não encontrado"
-      });
+    if (pdfId) {
+      const { data: pdf, error } = await supabase
+        .from("pdfs")
+        .select("content")
+        .eq("id", pdfId)
+        .single();
+
+      if (!error && pdf) {
+        content = pdf.content || "";
+      }
     }
 
-    const content = pdf.content || "";
-
     /* =========================
-       INTELIGÊNCIA SIMPLES (SAAS STYLE)
+       INTELIGÊNCIA SIMPLES
     ========================= */
 
     const intent = detectIntent(question);
@@ -98,29 +89,29 @@ router.post("/", auth, async (req, res) => {
     switch (intent) {
       case "summary":
         prompt = `
-Crie um resumo simples e didático do PDF abaixo.
+Crie um resumo simples e didático do conteúdo abaixo.
 
 Regras:
 - não copiar texto
-- explicar com linguagem simples
-- organizar em tópicos
+- linguagem simples
+- tópicos claros
 
-PDF:
-${content}
+CONTEÚDO:
+${content || "Nenhum PDF fornecido."}
 `;
         break;
 
       case "words":
         prompt = `
-Explique o vocabulário do PDF de forma simples.
+Explique vocabulário de forma simples.
 
 Inclua:
 - tradução
 - significado
 - exemplos
 
-PDF:
-${content}
+CONTEÚDO:
+${content || "Nenhum PDF fornecido."}
 
 Pergunta:
 ${question}
@@ -129,15 +120,15 @@ ${question}
 
       case "examples":
         prompt = `
-Crie exemplos práticos com base no PDF.
+Crie exemplos práticos.
 
 Regras:
 - frases simples
-- tradução abaixo
+- tradução
 - explicação curta
 
-PDF:
-${content}
+CONTEÚDO:
+${content || "Nenhum PDF fornecido."}
 
 Pergunta:
 ${question}
@@ -146,15 +137,15 @@ ${question}
 
       case "grammar":
         prompt = `
-Explique a gramática do PDF de forma simples.
+Explique gramática de forma simples.
 
 Regras:
-- explique como um professor
-- dê exemplos
-- não copie o PDF
+- estilo professor
+- exemplos
+- não copiar texto
 
-PDF:
-${content}
+CONTEÚDO:
+${content || "Nenhum PDF fornecido."}
 
 Pergunta:
 ${question}
@@ -163,10 +154,10 @@ ${question}
 
       default:
         prompt = `
-Responda a pergunta com base no PDF.
+Responda normalmente a pergunta.
 
-PDF:
-${content}
+CONTEÚDO:
+${content || "Nenhum PDF fornecido."}
 
 Pergunta:
 ${question}
@@ -174,38 +165,38 @@ ${question}
     }
 
     /* =========================
-       IA (GROQ)
+       IA
     ========================= */
 
-    const answer = await askAI(prompt, content);
+    const answer = await askAI(prompt);
 
     /* =========================
-       SALVA MENSAGENS
+       SALVA MENSAGENS (SE CHAT EXISTIR)
     ========================= */
 
-    await supabase.from("messages").insert([
-      {
-        chat_id: chatId,
-        role: "user",
-        content: question
-      }
-    ]);
+    if (chatId) {
+      await supabase.from("messages").insert([
+        {
+          chat_id: chatId,
+          role: "user",
+          content: question
+        }
+      ]);
 
-    await supabase.from("messages").insert([
-      {
-        chat_id: chatId,
-        role: "assistant",
-        content: answer
-      }
-    ]);
+      await supabase.from("messages").insert([
+        {
+          chat_id: chatId,
+          role: "assistant",
+          content: answer
+        }
+      ]);
+    }
 
     /* =========================
        RESPONSE
     ========================= */
 
-    return res.json({
-      answer
-    });
+    return res.json({ answer });
 
   } catch (err) {
     console.log("❌ CHAT ERROR:", err);
