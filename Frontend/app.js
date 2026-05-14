@@ -551,37 +551,19 @@ async function signup() {
 async function sendImage() {
 
   const file =
-    document.getElementById("imageInput")?.files?.[0];
+    document.getElementById("imageInput").files[0];
 
-  if (!file) {
-    alert("Escolha uma imagem");
-    return;
-  }
+  if (!file) return;
 
-  // cria chat automaticamente
-  if (!currentChat) {
+  // pergunta digitada pelo usuário
+  const userMessage =
+    questionInput.value || "";
 
-    const newChat = await safeFetch(
-      "https://pdf-8cd2.onrender.com/api/chats",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          title: "Imagem enviada"
-        })
-      }
-    );
-
-    if (!newChat) {
-      addMessage("Erro ao criar chat", "ai");
-      return;
-    }
-
-    currentChat = newChat;
-    activeChatId = newChat.id;
-  }
+  // detecta idioma simples
+  const language =
+    navigator.language?.startsWith("pt")
+      ? "português"
+      : "english";
 
   const loading = createLoading();
 
@@ -591,9 +573,13 @@ async function sendImage() {
 
   fd.append("image", file);
 
+  // NOVO
+  fd.append("userMessage", userMessage);
+  fd.append("language", language);
+
   try {
 
-    const data = await safeFetch(
+    const response = await safeFetch(
       "https://pdf-8cd2.onrender.com/api/image-chat",
       {
         method: "POST",
@@ -604,87 +590,47 @@ async function sendImage() {
     clearInterval(loading._interval);
     loading.remove();
 
-    if (!data) {
-
+    if (!response) {
       addMessage(
         "Erro ao analisar imagem 😭",
         "ai"
       );
-
       return;
     }
 
-    const imageUrl =
-      data.imageUrl ||
-      URL.createObjectURL(file);
+    const imageUrl = response.imageUrl;
 
     // mostra imagem
-    addMessage(
-      imageUrl,
-      "user",
-      "image"
-    );
+    if (imageUrl) {
+      addMessage(imageUrl, "user", "image");
+    }
 
-    // salva imagem
-    await safeFetch(
-      "https://pdf-8cd2.onrender.com/api/messages",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          chat_id: currentChat.id,
-          role: "user",
-          content: imageUrl,
-          type: "image"
-        })
-      }
-    );
-
-    // salva resposta IA
-    await safeFetch(
-      "https://pdf-8cd2.onrender.com/api/messages",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          chat_id: currentChat.id,
-          role: "assistant",
-          content: data.answer,
-          type: "text"
-        })
-      }
-    );
-
+    // resposta IA
     addMessage(
 `
 ## Texto detectado
-
-${data.text || "Nenhum texto encontrado"}
+${response.text}
 
 ---
 
-## IA
-
-${data.answer || "Sem resposta"}
+${response.answer}
 `,
       "ai"
     );
 
+    // limpa input
+    questionInput.value = "";
+
   } catch (err) {
 
     clearInterval(loading._interval);
-
     loading.remove();
-
-    console.log(err);
 
     addMessage(
       "Erro ao analisar imagem 😭",
       "ai"
     );
+
+    console.log(err);
   }
 }
