@@ -2,7 +2,7 @@ import express from "express";
 import { supabase } from "../lib/supabase.js";
 import { auth } from "../middleware/auth.js";
 import { askAI } from "../services/aiService.js";
-import { systemPrompt } from "../services/systemPrompt.js";
+import { SYSTEM_PROMPT } from "../services/systemPrompt.js";
 
 const router = express.Router();
 
@@ -12,36 +12,17 @@ const router = express.Router();
 function detectIntent(question) {
   const q = question.toLowerCase();
 
-  if (
-    q.includes("resumo") ||
-    q.includes("resumir") ||
-    q.includes("explique") ||
-    q.includes("sobre o que") ||
-    q.includes("explicação")
-  ) return "summary";
+  if (q.includes("resumo") || q.includes("resumir") || q.includes("explique"))
+    return "summary";
 
-  if (
-    q.includes("palavra") ||
-    q.includes("significado") ||
-    q.includes("vocabul") ||
-    q.includes("tradu") ||
-    q.includes("ingles") ||
-    q.includes("inglês")
-  ) return "words";
+  if (q.includes("palavra") || q.includes("significado"))
+    return "words";
 
-  if (
-    q.includes("exemplo") ||
-    q.includes("frase") ||
-    q.includes("usar") ||
-    q.includes("aplicar")
-  ) return "examples";
+  if (q.includes("exemplo") || q.includes("frase"))
+    return "examples";
 
-  if (
-    q.includes("gramatica") ||
-    q.includes("gramática") ||
-    q.includes("simple present") ||
-    q.includes("adverb")
-  ) return "grammar";
+  if (q.includes("gramatica") || q.includes("gramática"))
+    return "grammar";
 
   return "ai";
 }
@@ -73,7 +54,7 @@ router.post("/", auth, async (req, res) => {
     }
 
     /* =========================
-       MEMÓRIA DO CHAT (ÚLTIMAS 12 MSGS)
+       MEMÓRIA RESUMIDA (últimas 10 mensagens)
     ========================= */
     let historyText = "";
 
@@ -82,15 +63,18 @@ router.post("/", auth, async (req, res) => {
         .from("messages")
         .select("role, content")
         .eq("chat_id", chatId)
-        .order("created_at", { ascending: true })
-        .limit(12);
+        .order("created_at", { ascending: false })
+        .limit(10);
 
       historyText =
-        history?.map(m =>
-          m.role === "user"
-            ? `Usuário: ${m.content}`
-            : `Assistente: ${m.content}`
-        ).join("\n") || "";
+        history
+          ?.reverse()
+          .map(m =>
+            m.role === "user"
+              ? `Usuário: ${m.content}`
+              : `Assistente: ${m.content}`
+          )
+          .join("\n") || "";
     }
 
     /* =========================
@@ -98,59 +82,35 @@ router.post("/", auth, async (req, res) => {
     ========================= */
     const intent = detectIntent(question);
 
-    let taskPrompt = "";
+    const taskMap = {
+      summary: "Resuma o conteúdo de forma clara e organizada.",
+      words: "Explique vocabulário com significado, tradução e exemplos.",
+      examples: "Crie exemplos práticos simples.",
+      grammar: "Explique gramática como professor.",
+      ai: "Responda normalmente de forma útil."
+    };
 
-    switch (intent) {
-      case "summary":
-        taskPrompt = "Resuma de forma clara e organizada em tópicos.";
-        break;
-
-      case "words":
-        taskPrompt = "Explique vocabulário com significado, tradução e exemplos.";
-        break;
-
-      case "examples":
-        taskPrompt = "Crie exemplos práticos com frases simples.";
-        break;
-
-      case "grammar":
-        taskPrompt = "Explique gramática de forma simples como um professor.";
-        break;
-
-      default:
-        taskPrompt = "Responda normalmente de forma útil e clara.";
-    }
+    const taskPrompt = taskMap[intent];
 
     /* =========================
-       PROMPT FINAL (PROFISSIONAL)
+       PROMPT FINAL PROFISSIONAL
     ========================= */
     const prompt = `
-${systemPrompt}
+${SYSTEM_PROMPT}
 
----
-
-HISTÓRICO DA CONVERSA:
+HISTÓRICO RECENTE:
 ${historyText || "Sem histórico ainda."}
 
----
-
-CONTEÚDO DO PDF:
-${content || "Nenhum PDF anexado."}
-
----
+CONTEXTO PDF:
+${content || "Sem PDF anexado."}
 
 TAREFA:
 ${taskPrompt}
-
----
 
 PERGUNTA:
 ${question}
 `;
 
-    /* =========================
-       IA
-    ========================= */
     const answer = await askAI(prompt);
 
     /* =========================
@@ -158,19 +118,8 @@ ${question}
     ========================= */
     if (chatId) {
       await supabase.from("messages").insert([
-        {
-          chat_id: chatId,
-          role: "user",
-          content: question
-        }
-      ]);
-
-      await supabase.from("messages").insert([
-        {
-          chat_id: chatId,
-          role: "assistant",
-          content: answer
-        }
+        { chat_id: chatId, role: "user", content: question },
+        { chat_id: chatId, role: "assistant", content: answer }
       ]);
     }
 
@@ -178,9 +127,7 @@ ${question}
 
   } catch (err) {
     console.log("❌ CHAT ERROR:", err);
-    return res.status(500).json({
-      error: "Erro ao processar chat"
-    });
+    return res.status(500).json({ error: "Erro ao processar chat" });
   }
 });
 
