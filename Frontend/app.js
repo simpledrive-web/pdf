@@ -574,6 +574,47 @@ async function sendImage() {
       ? "português"
       : "english";
 
+  // =========================
+  // CRIA CHAT AUTOMATICAMENTE
+  // =========================
+  if (!currentChat) {
+
+    const newChat = await safeFetch(
+      "https://pdf-8cd2.onrender.com/api/chats",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title:
+            userMessage ||
+            "Imagem enviada"
+        })
+      }
+    );
+
+    if (newChat) {
+
+      currentChat = newChat;
+      activeChatId = newChat.id;
+
+      // atualiza sidebar
+      chats.unshift(newChat);
+
+      renderChats(chats);
+
+    } else {
+
+      addMessage(
+        "Erro ao criar chat 😭",
+        "ai"
+      );
+
+      return;
+    }
+  }
+
   const loading = createLoading();
 
   chatEl.appendChild(loading);
@@ -607,31 +648,88 @@ async function sendImage() {
       return;
     }
 
-    // salva OCR globalmente
-    lastImageText = data.text || "";
+    // =========================
+    // SALVA OCR
+    // =========================
+    lastImageText =
+      data.text || "";
 
-    // preview local
+    // =========================
+    // PREVIEW LOCAL
+    // =========================
     const imageUrl =
       URL.createObjectURL(file);
 
+    // =========================
+    // MOSTRA IMAGEM
+    // =========================
     addMessage(
       imageUrl,
       "user",
       "image"
     );
 
-    addMessage(
-`
+    // =========================
+    // SALVA IMAGEM NO BANCO
+    // =========================
+    await safeFetch(
+      "https://pdf-8cd2.onrender.com/api/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: currentChat.id,
+          role: "user",
+          content: imageUrl,
+          type: "image"
+        })
+      }
+    );
+
+    // =========================
+    // RESPOSTA IA
+    // =========================
+    const aiMessage = `
 ## Texto detectado
+
 ${data.text}
 
 ---
 
 ${data.answer}
-`,
+`;
+
+    addMessage(
+      aiMessage,
       "ai"
     );
 
+    // =========================
+    // SALVA IA NO BANCO
+    // =========================
+    await safeFetch(
+      "https://pdf-8cd2.onrender.com/api/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify({
+          chat_id: currentChat.id,
+          role: "assistant",
+          content: aiMessage,
+          type: "text"
+        })
+      }
+    );
+
+    // =========================
+    // LIMPA INPUTS
+    // =========================
     questionInput.value = "";
 
     document.getElementById(
@@ -640,7 +738,10 @@ ${data.answer}
 
   } catch (err) {
 
-    clearInterval(loading._interval);
+    clearInterval(
+      loading._interval
+    );
+
     loading.remove();
 
     addMessage(
