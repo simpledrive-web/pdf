@@ -12,7 +12,7 @@ const router = express.Router();
    LISTAR CHATS SEM PDF
 ========================= */
 router.get(
-  "/",
+  "/no-pdf",
   auth,
   async (req, res) => {
 
@@ -24,8 +24,8 @@ router.get(
       } = await supabase
         .from("chats")
         .select("*")
-        .is("pdf_id", null)
         .eq("user_id", req.user.id)
+        .filter("pdf_id", "is", null)
         .order("created_at", {
           ascending: false
         });
@@ -59,7 +59,7 @@ router.get(
    LISTAR CHATS DO PDF
 ========================= */
 router.get(
-  "/:pdfId",
+  "/pdf/:pdfId",
   auth,
   async (req, res) => {
 
