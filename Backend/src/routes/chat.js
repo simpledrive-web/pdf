@@ -1,134 +1,156 @@
 import express from "express";
-import { supabase } from "../lib/supabase.js";
-import { auth } from "../middleware/auth.js";
-import { askAI } from "../services/aiService.js";
-import { SYSTEM_PROMPT } from "../services/systemPrompt.js";
+import fetch from "node-fetch";
 
 const router = express.Router();
 
-/* =========================
-   DETECTA INTENÇÃO
-========================= */
-function detectIntent(question) {
-  const q = question.toLowerCase();
+router.post(
+  "/chat",
+  async (req, res) => {
 
-  if (q.includes("resumo") || q.includes("resumir") || q.includes("explique"))
-    return "summary";
+    try {
 
-  if (q.includes("palavra") || q.includes("significado"))
-    return "words";
+      // =========================
+      // BODY
+      // =========================
+      const {
+        question,
+        pdfId,
+        chatId,
+        imageContext
+      } = req.body;
 
-  if (q.includes("exemplo") || q.includes("frase"))
-    return "examples";
+      // =========================
+      // VALIDAÇÃO
+      // =========================
+      if (!question) {
 
-  if (q.includes("gramatica") || q.includes("gramática"))
-    return "grammar";
+        return res.status(400).json({
+          error: "Pergunta não enviada"
+        });
 
-  return "ai";
-}
+      }
 
-/* =========================
-   CHAT ROUTE
-========================= */
-router.post("/", auth, async (req, res) => {
-  try {
-    const { question, pdfId, chatId } = req.body;
+      // =========================
+      // PROMPT
+      // =========================
+      const prompt = `
+Você é uma IA inteligente,
+prestativa e contextual.
 
-    if (!question) {
-      return res.status(400).json({ error: "Pergunta obrigatória" });
-    }
+REGRAS IMPORTANTES:
 
-    /* =========================
-       PDF (OPCIONAL)
-    ========================= */
-    let content = "";
+1. Responda sempre baseado no contexto disponível.
 
-    if (pdfId) {
-      const { data: pdf } = await supabase
-        .from("pdfs")
-        .select("content")
-        .eq("id", pdfId)
-        .single();
+2. Se existir contexto OCR/imagem,
+use ele como base principal.
 
-      content = pdf?.content || "";
-    }
+3. Nunca diga:
+- "não existe PDF"
+- "nenhuma imagem enviada"
+- "não há contexto"
 
-    /* =========================
-       MEMÓRIA RESUMIDA (últimas 10 mensagens)
-    ========================= */
-    let historyText = "";
+4. Se o usuário pedir:
+- resumo
+- tradução
+- exercícios
+- perguntas
+- explicação
 
-    if (chatId) {
-      const { data: history } = await supabase
-        .from("messages")
-        .select("role, content")
-        .eq("chat_id", chatId)
-        .order("created_at", { ascending: false })
-        .limit(10);
+Use o contexto da imagem.
 
-      historyText =
-        history
-          ?.reverse()
-          .map(m =>
-            m.role === "user"
-              ? `Usuário: ${m.content}`
-              : `Assistente: ${m.content}`
-          )
-          .join("\n") || "";
-    }
+5. Se o conteúdo estiver em inglês,
+você pode ensinar inglês.
 
-    /* =========================
-       INTENÇÃO
-    ========================= */
-    const intent = detectIntent(question);
+6. Se o usuário pedir exercícios,
+crie exercícios NOVOS baseados no conteúdo.
 
-    const taskMap = {
-      summary: "Resuma o conteúdo de forma clara e organizada.",
-      words: "Explique vocabulário com significado, tradução e exemplos.",
-      examples: "Crie exemplos práticos simples.",
-      grammar: "Explique gramática como professor.",
-      ai: "Responda normalmente de forma útil."
-    };
+7. Formate bonito usando markdown.
 
-    const taskPrompt = taskMap[intent];
+8. Nunca invente conteúdo fora do contexto.
 
-    /* =========================
-       PROMPT FINAL PROFISSIONAL
-    ========================= */
-    const prompt = `
-${SYSTEM_PROMPT}
+=========================
 
-HISTÓRICO RECENTE:
-${historyText || "Sem histórico ainda."}
+CONTEXTO DA IMAGEM OCR:
 
-CONTEXTO PDF:
-${content || "Sem PDF anexado."}
+${imageContext || "Nenhum"}
 
-TAREFA:
-${taskPrompt}
+=========================
 
-PERGUNTA:
+ID DO PDF:
+${pdfId || "Nenhum"}
+
+ID DO CHAT:
+${chatId || "Nenhum"}
+
+=========================
+
+PERGUNTA DO USUÁRIO:
+
 ${question}
 `;
 
-    const answer = await askAI(prompt);
+      // =========================
+      // GROQ
+      // =========================
+      const response = await fetch(
+        "https://api.groq.com/openai/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              `Bearer ${process.env.GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "Você responde usando contexto OCR e PDFs."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.7,
+            max_tokens: 1200
+          })
+        }
+      );
 
-    /* =========================
-       SALVA MEMÓRIA
-    ========================= */
-    if (chatId) {
-      await supabase.from("messages").insert([
-        { chat_id: chatId, role: "user", content: question },
-        { chat_id: chatId, role: "assistant", content: answer }
-      ]);
+      const data = await response.json();
+
+      console.log(data);
+
+      // =========================
+      // RESPOSTA IA
+      // =========================
+      const answer =
+        data?.choices?.[0]?.message?.content
+        || "Não consegui responder.";
+
+      // =========================
+      // RESPONSE
+      // =========================
+      res.json({
+        success: true,
+        answer
+      });
+
+    } catch (err) {
+
+      console.log(err);
+
+      res.status(500).json({
+        success: false,
+        error: "Erro IA chat"
+      });
+
     }
 
-    return res.json({ answer });
-
-  } catch (err) {
-    console.log("❌ CHAT ERROR:", err);
-    return res.status(500).json({ error: "Erro ao processar chat" });
   }
-});
+);
 
 export default router;

@@ -14,6 +14,7 @@ let chats = [];
 let currentPDF = null;
 let currentChat = null;
 let activeChatId = null;
+let lastImageText = "";
 
 /* =========================
    ELEMENTOS
@@ -246,11 +247,18 @@ async function openChat(chat) {
    NOVO CHAT
 ========================= */
 function newChat() {
+
   currentChat = null;
   activeChatId = null;
 
+  lastImageText = "";
+
   chatEl.innerHTML = "";
-  addMessage("Novo chat iniciado 🚀", "ai");
+
+  addMessage(
+    "Novo chat iniciado 🚀",
+    "ai"
+  );
 
   if (isMobile()) closeSidebar();
 }
@@ -259,8 +267,10 @@ function newChat() {
    PERGUNTAR
 ========================= */
 async function askQuestion() {
-  const q = questionInput.value;
-  if (!q) return;
+  const q =
+  questionInput.value.trim();
+
+if (!q) return;
 
   addMessage(q, "user");
   questionInput.value = "";
@@ -295,10 +305,11 @@ async function askQuestion() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      question: q,
-      pdfId: currentPDF?.id || null,
-      chatId: currentChat?.id || null
-    })
+  question: q,
+  pdfId: currentPDF?.id || null,
+  chatId: currentChat?.id || null,
+  imageContext: lastImageText || ""
+})
   }
 );
   clearInterval(loading._interval);
@@ -555,11 +566,9 @@ async function sendImage() {
 
   if (!file) return;
 
-  // pergunta digitada pelo usuário
   const userMessage =
     questionInput.value || "";
 
-  // idioma
   const language =
     navigator.language?.startsWith("pt")
       ? "português"
@@ -572,8 +581,6 @@ async function sendImage() {
   const fd = new FormData();
 
   fd.append("image", file);
-
-  // extras
   fd.append("userMessage", userMessage);
   fd.append("language", language);
 
@@ -590,7 +597,6 @@ async function sendImage() {
     clearInterval(loading._interval);
     loading.remove();
 
-    // erro
     if (!data) {
 
       addMessage(
@@ -601,7 +607,10 @@ async function sendImage() {
       return;
     }
 
-    // mostra preview local da imagem
+    // salva OCR globalmente
+    lastImageText = data.text || "";
+
+    // preview local
     const imageUrl =
       URL.createObjectURL(file);
 
@@ -611,20 +620,18 @@ async function sendImage() {
       "image"
     );
 
-    // resposta IA
     addMessage(
 `
 ## Texto detectado
-${data.text || "Nenhum texto encontrado"}
+${data.text}
 
 ---
 
-${data.answer || "Sem resposta da IA"}
+${data.answer}
 `,
       "ai"
     );
 
-    // limpa input
     questionInput.value = "";
 
     document.getElementById(
