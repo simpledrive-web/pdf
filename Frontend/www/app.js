@@ -156,7 +156,7 @@ async function openPDF(pdf) {
 ========================= */
 async function loadChats(pdfId) {
   const data = await safeFetch(
-    `https://pdf-8cd2.onrender.com/api/chats/${pdfId}`
+    `https://pdf-8cd2.onrender.com/api/chats/pdf/${pdfId}`
   );
 
   return Array.isArray(data) ? data : [];

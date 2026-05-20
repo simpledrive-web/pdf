@@ -142,25 +142,118 @@ function addMessage(content, role, type = "text") {
 /* =========================
    PDFS
 ========================= */
-async function loadPDFs() {
-  const data = await safeFetch("https://pdf-8cd2.onrender.com/api/pdfs");
+/* =========================
+   PDFS + CHATS SEM PDF
+========================= */
 
-  pdfs = Array.isArray(data) ? data : [];
+async function loadPDFs() {
+
+  const data = await safeFetch(
+    "https://pdf-8cd2.onrender.com/api/pdfs"
+  );
+
+  pdfs = Array.isArray(data)
+    ? data
+    : [];
+
   renderHistory();
 }
 
+/* =========================
+   CHATS SEM PDF
+========================= */
+async function loadNoPdfChats() {
+
+  const data = await safeFetch(
+    "https://pdf-8cd2.onrender.com/api/chats/no-pdf"
+  );
+
+  if (!Array.isArray(data)) return;
+
+  chats = data;
+
+  renderChats(chats);
+}
+
+/* =========================
+   RENDER HISTORY
+========================= */
 function renderHistory() {
+
   historyEl.innerHTML = "";
 
-  pdfs.forEach(pdf => {
-    const div = document.createElement("div");
-    div.className = "history-item";
-    div.innerText = "📄 " + pdf.file_name;
+  // =========================
+  // CHATS SEM PDF
+  // =========================
+  if (chats.length > 0) {
 
-    div.onclick = () => openPDF(pdf);
+    const title =
+      document.createElement("div");
 
-    historyEl.appendChild(div);
-  });
+    title.className = "history-title";
+
+    title.innerText = "💬 Chats";
+
+    historyEl.appendChild(title);
+
+    chats.forEach(chat => {
+
+      const div =
+        document.createElement("div");
+
+      div.className =
+        "history-item" +
+        (activeChatId === chat.id
+          ? " active"
+          : "");
+
+      div.innerText =
+        "💬 " +
+        (chat.title || "Chat");
+
+      div.onclick = () =>
+        openChat(chat);
+
+      historyEl.appendChild(div);
+
+    });
+
+  }
+
+  // =========================
+  // PDFs
+  // =========================
+  if (pdfs.length > 0) {
+
+    const title =
+      document.createElement("div");
+
+    title.className = "history-title";
+
+    title.innerText = "📄 PDFs";
+
+    historyEl.appendChild(title);
+
+    pdfs.forEach(pdf => {
+
+      const div =
+        document.createElement("div");
+
+      div.className =
+        "history-item";
+
+      div.innerText =
+        "📄 " + pdf.file_name;
+
+      div.onclick = () =>
+        openPDF(pdf);
+
+      historyEl.appendChild(div);
+
+    });
+
+  }
+
 }
 
 /* =========================
@@ -189,7 +282,7 @@ async function openPDF(pdf) {
 ========================= */
 async function loadChats(pdfId) {
   const data = await safeFetch(
-    `https://pdf-8cd2.onrender.com/api/chats/${pdfId}`
+    `https://pdf-8cd2.onrender.com/api/chats/pdf/${pdfId}`
   );
 
   return Array.isArray(data) ? data : [];
@@ -395,7 +488,7 @@ questionInput.addEventListener("keydown", (e) => {
 /* =========================
    INIT
 ========================= */
-supabaseClient.auth.getSession().then(({ data }) => {
+supabaseClient.auth.getSession().then(async ({ data }) => {
 
   if (data.session) {
 
@@ -403,20 +496,24 @@ supabaseClient.auth.getSession().then(({ data }) => {
     document.getElementById("app").style.display = "flex";
 
     const user =
-  data.session.user.user_metadata || {};
+      data.session.user.user_metadata || {};
 
-const firstName = user.first_name || "";
-const lastName = user.last_name || "";
+    const firstName =
+      user.first_name || "";
 
-const fullName =
-  `${firstName} ${lastName}`.trim();
+    const lastName =
+      user.last_name || "";
 
-welcomeText.innerText =
-  fullName
-    ? `Olá, ${fullName} 👋`
-    : "Olá 👋";
+    const fullName =
+      `${firstName} ${lastName}`.trim();
 
-    loadPDFs();
+    welcomeText.innerText =
+      fullName
+        ? `Olá, ${fullName} 👋`
+        : "Olá 👋";
+
+    await loadPDFs();
+    await loadNoPdfChats();
 
   } else {
 
