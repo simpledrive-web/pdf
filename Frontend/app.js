@@ -569,36 +569,38 @@ async function sendImage() {
   const userMessage =
     questionInput.value || "";
 
- let language = "português";
+  // =========================
+  // DETECÇÃO IDIOMA
+  // =========================
+  let language = "português";
 
-const msg =
-  userMessage.toLowerCase();
+  const msg =
+    userMessage.toLowerCase();
 
-// DETECÇÃO INTELIGENTE
-if (
-  msg.includes("em inglês") ||
-  msg.includes("in english") ||
-  msg.includes("english")
-) {
+  if (
+    msg.includes("em inglês") ||
+    msg.includes("in english") ||
+    msg.includes("english")
+  ) {
 
-  language = "english";
+    language = "english";
 
-} else if (
-  msg.includes("em espanhol") ||
-  msg.includes("spanish")
-) {
+  } else if (
+    msg.includes("em espanhol") ||
+    msg.includes("spanish")
+  ) {
 
-  language = "español";
+    language = "español";
 
-} else if (
-  navigator.language?.startsWith("en")
-) {
+  } else if (
+    navigator.language?.startsWith("en")
+  ) {
 
-  language = "english";
-}
+    language = "english";
+  }
 
   // =========================
-  // CRIA CHAT AUTOMATICAMENTE
+  // CRIA CHAT AUTOMÁTICO
   // =========================
   if (!currentChat) {
 
@@ -617,17 +619,7 @@ if (
       }
     );
 
-    if (newChat) {
-
-      currentChat = newChat;
-      activeChatId = newChat.id;
-
-      // atualiza sidebar
-      chats.unshift(newChat);
-
-      renderChats(chats);
-
-    } else {
+    if (!newChat) {
 
       addMessage(
         "Erro ao criar chat 😭",
@@ -636,6 +628,13 @@ if (
 
       return;
     }
+
+    currentChat = newChat;
+    activeChatId = newChat.id;
+
+    chats.unshift(newChat);
+
+    renderChats(chats);
   }
 
   const loading = createLoading();
@@ -674,77 +673,78 @@ if (
     // =========================
     // SALVA OCR
     // =========================
-    lastImageText =
-      data.text || "";
+    lastImageText = data.text || "";
 
     // =========================
-    // PREVIEW LOCAL
+    // CONVERTE IMG BASE64
     // =========================
-    const imageUrl =
-      URL.createObjectURL(file);
+    const base64Image =
+      await new Promise((resolve) => {
+
+        const reader =
+          new FileReader();
+
+        reader.onloadend = () => {
+          resolve(reader.result);
+        };
+
+        reader.readAsDataURL(file);
+
+      });
 
     // =========================
     // MOSTRA IMAGEM
     // =========================
     addMessage(
-      imageUrl,
+      base64Image,
       "user",
       "image"
     );
 
     // =========================
-    // SALVA IMAGEM NO BANCO
+    // RESPOSTA IA
+    // =========================
+    const aiResponse =
+      data.answer || "Sem resposta.";
+
+    addMessage(
+      aiResponse,
+      "ai"
+    );
+
+    // =========================
+    // SALVA IMAGEM
     // =========================
     await safeFetch(
       "https://pdf-8cd2.onrender.com/api/messages",
       {
         method: "POST",
         headers: {
-          "Content-Type":
-            "application/json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           chat_id: currentChat.id,
           role: "user",
-          content: imageUrl,
+          content: base64Image,
           type: "image"
         })
       }
     );
 
     // =========================
-    // RESPOSTA IA
-    // =========================
-    const aiMessage = `
-## Texto detectado
-
-${data.text}
-
----
-
-${data.answer}
-`;
-
-    addMessage(
-      aiMessage,
-      "ai"
-    );
-
-    // =========================
-    // SALVA IA NO BANCO
+    // SALVA IA
     // =========================
     await safeFetch(
       "https://pdf-8cd2.onrender.com/api/messages",
       {
         method: "POST",
         headers: {
-          "Content-Type":
-            "application/json"
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           chat_id: currentChat.id,
-          role: "assistant",
-          content: aiMessage,
+          role: "ai",
+          content: aiResponse,
           type: "text"
         })
       }
@@ -761,10 +761,7 @@ ${data.answer}
 
   } catch (err) {
 
-    clearInterval(
-      loading._interval
-    );
-
+    clearInterval(loading._interval);
     loading.remove();
 
     addMessage(
