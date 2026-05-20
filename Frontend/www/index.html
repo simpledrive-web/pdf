@@ -86,12 +86,11 @@
 
         <button onclick="logout()">🚪</button>
       </div>
-
-      <div class="upload-area">
-        <input type="file" id="pdfFile" />
-        <button onclick="uploadPDF()">Upload PDF</button>
-        <button onclick="newChat()">Novo Chat</button>
-      </div>
+<div class="upload-area">
+  <button onclick="newChat()">
+    Novo Chat
+  </button>
+</div>
 
       <div class="history" id="history"></div>
 
@@ -115,9 +114,61 @@
       <div class="chat" id="chat"></div>
 
       <div class="bottom">
-        <input id="question" placeholder="Pergunte algo..." />
-        <button onclick="askQuestion()">Enviar</button>
-      </div>
+
+  <div class="attach-wrapper">
+
+    <button
+      class="clip-btn"
+      onclick="toggleAttachMenu()"
+    >
+      📎
+    </button>
+
+    <div
+      class="attach-menu"
+      id="attachMenu"
+    >
+
+      <button onclick="selectImage()">
+        🖼️ Imagem
+      </button>
+
+      <button onclick="selectPDF()">
+        📄 PDF
+      </button>
+
+    </div>
+
+  </div>
+
+  <input
+    id="question"
+    placeholder="Pergunte algo..."
+  />
+
+  <button onclick="askQuestion()">
+    Enviar
+  </button>
+
+</div>
+
+<!-- INPUTS OCULTOS -->
+
+<input
+  type="file"
+  id="imageInput"
+  accept="image/*"
+  style="display:none"
+  onchange="sendImage()"
+/>
+
+<input
+  type="file"
+  id="pdfFile"
+  accept=".pdf"
+  style="display:none"
+  onchange="uploadPDF()"
+/>
 
     </main>
 
