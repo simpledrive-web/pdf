@@ -569,10 +569,33 @@ async function sendImage() {
   const userMessage =
     questionInput.value || "";
 
-  const language =
-    navigator.language?.startsWith("pt")
-      ? "português"
-      : "english";
+ let language = "português";
+
+const msg =
+  userMessage.toLowerCase();
+
+// DETECÇÃO INTELIGENTE
+if (
+  msg.includes("em inglês") ||
+  msg.includes("in english") ||
+  msg.includes("english")
+) {
+
+  language = "english";
+
+} else if (
+  msg.includes("em espanhol") ||
+  msg.includes("spanish")
+) {
+
+  language = "español";
+
+} else if (
+  navigator.language?.startsWith("en")
+) {
+
+  language = "english";
+}
 
   // =========================
   // CRIA CHAT AUTOMATICAMENTE
