@@ -206,19 +206,9 @@
 
       </div>
 
-      <!-- UPLOAD -->
+      <!-- BOTÃO NOVO CHAT -->
 
       <div class="upload-area">
-
-        <input
-          type="file"
-          id="pdfFile"
-          accept=".pdf"
-        />
-
-        <button onclick="uploadPDF()">
-          Upload PDF
-        </button>
 
         <button onclick="newChat()">
           Novo Chat
@@ -275,6 +265,32 @@
 
       <div class="bottom">
 
+        <div class="attach-wrapper">
+
+          <button
+            class="clip-btn"
+            onclick="toggleAttachMenu()"
+          >
+            📎
+          </button>
+
+          <div
+            class="attach-menu"
+            id="attachMenu"
+          >
+
+            <button onclick="selectImage()">
+              🖼️ Imagem
+            </button>
+
+            <button onclick="selectPDF()">
+              📄 PDF
+            </button>
+
+          </div>
+
+        </div>
+
         <input
           id="question"
           placeholder="Pergunte algo..."
@@ -284,27 +300,25 @@
           Enviar
         </button>
 
-        <!-- INPUT IMAGEM -->
-
-        <input
-          type="file"
-          id="imageInput"
-          accept="image/*"
-          style="display:none;"
-          onchange="sendImage()"
-        />
-
-        <button
-          onclick="
-            document
-              .getElementById('imageInput')
-              .click()
-          "
-        >
-          📷
-        </button>
-
       </div>
+
+      <!-- INPUTS OCULTOS -->
+
+      <input
+        type="file"
+        id="imageInput"
+        accept="image/*"
+        style="display:none"
+        onchange="sendImage()"
+      />
+
+      <input
+        type="file"
+        id="pdfFile"
+        accept=".pdf"
+        style="display:none"
+        onchange="uploadPDF()"
+      />
 
     </main>
 
@@ -315,4 +329,5 @@
   <script src="app.js"></script>
 
 </body>
+
 </html>

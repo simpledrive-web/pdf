@@ -869,3 +869,62 @@ async function sendImage() {
     console.log(err);
   }
 }
+
+/* =========================
+   ATTACH MENU
+========================= */
+
+function toggleAttachMenu() {
+
+  const menu =
+    document.getElementById("attachMenu");
+
+  menu.classList.toggle("show");
+}
+
+function selectImage() {
+
+  document
+    .getElementById("imageInput")
+    .click();
+
+  document
+    .getElementById("attachMenu")
+    .classList.remove("show");
+}
+
+function selectPDF() {
+
+  document
+    .getElementById("pdfFile")
+    .click();
+
+  document
+    .getElementById("attachMenu")
+    .classList.remove("show");
+}
+
+/* FECHAR MENU AO CLICAR FORA */
+
+document.addEventListener(
+  "click",
+  (e) => {
+
+    const menu =
+      document.getElementById("attachMenu");
+
+    const wrapper =
+      document.querySelector(".attach-wrapper");
+
+    if (
+      menu &&
+      wrapper &&
+      !wrapper.contains(e.target)
+    ) {
+
+      menu.classList.remove("show");
+
+    }
+
+  }
+);
