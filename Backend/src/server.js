@@ -25,7 +25,7 @@ app.use("/api/chats", chatRoutes);
 
 app.use("/api/messages", messageRoutes);
 
-app.use("/api/chat", chatAIRoutes);
+app.use("/api", chatAIRoutes);
 
 app.use("/api", imageRoutes);
 
