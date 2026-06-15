@@ -85,6 +85,13 @@ if (pdfId) {
 
   if (!error && pdf) {
     content = pdf.content || "";
+
+    console.log("=================================");
+console.log("PDF ID:", pdfId);
+console.log("CONTENT LENGTH:", content.length);
+console.log("PRIMEIROS 500 CHARS:");
+console.log(content.substring(0, 500));
+console.log("=================================");
   }
 
 }
