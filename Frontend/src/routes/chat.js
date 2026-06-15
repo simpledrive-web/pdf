@@ -63,27 +63,31 @@ router.post("/", auth, async (req, res) => {
   try {
     const { question, pdfId, chatId } = req.body;
 
-    if (!question || !pdfId) {
-      return res.status(400).json({
-        error: "Dados inválidos"
-      });
-    }
+   if (!question) {
+  return res.status(400).json({
+    error: "Pergunta obrigatória"
+  });
+}
 
     /* =========================
        BUSCA PDF
     ========================= */
 
-    const { data: pdf, error } = await supabase
-      .from("pdfs")
-      .select("*")
-      .eq("id", pdfId)
-      .single();
+    let content = "";
 
-    if (error || !pdf) {
-      return res.status(404).json({
-        error: "PDF não encontrado"
-      });
-    }
+if (pdfId) {
+
+  const { data: pdf, error } = await supabase
+    .from("pdfs")
+    .select("*")
+    .eq("id", pdfId)
+    .single();
+
+  if (!error && pdf) {
+    content = pdf.content || "";
+  }
+
+}
 
     const content = pdf.content || "";
 

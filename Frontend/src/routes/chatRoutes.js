@@ -65,12 +65,10 @@ router.post(
 
       console.log("BODY:", req.body);
 
-      if(!pdfId){
-
-        return res.status(400).json({
-          error:"pdfId obrigatório"
-        });
-      }
+     const {
+  pdfId = null,
+  title
+} = req.body;
 
       const {
         data,
